@@ -9,3 +9,6 @@ Pillow==12.3.0
 matplotlib==3.11.0
 qrcode[pil]==8.2
 markitdown[pdf,docx,pptx,xlsx]==0.1.6
+docx2pdf==0.1.8
+ocrmypdf==17.8.1
+pypdfium2==5.12.1

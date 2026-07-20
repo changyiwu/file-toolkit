@@ -12,10 +12,10 @@
 
 | 類別 | 代表套件 | 能做什麼 |
 |------|----------|----------|
-| 📄 Word | 🟢 `python-docx`；🟡 `docxcompose` | 生成/讀寫；選用合併 Word |
+| 📄 Word | 🟢 `python-docx`、`docx2pdf`；🟡 `docxcompose` | 生成/讀寫、Word 轉 PDF/JPG；選用合併 Word |
 | 📊 Excel | 🟢 `openpyxl`；🟡 `pandas`、`xlsxwriter` | 一般讀寫；選用進階分析/輸出 |
 | 📑 PPT | 🟢 `python-pptx` | 生成/改寫 PowerPoint |
-| 📕 PDF | 🟢 `PyMuPDF`、`pypdf`、`reportlab`；其餘選用 | 合併/拆分/抽文字/轉圖/浮水印/生成 |
+| 📕 PDF | 🟢 `PyMuPDF`、`pypdf`、`reportlab`、`ocrmypdf`、`pypdfium2` | 合併/拆分/抽文字/轉圖/浮水印/生成/OCR |
 | 🔄 轉檔 | 🟢 `markitdown[pdf,docx,pptx,xlsx]` | 常用文件轉 Markdown |
 | 🖼️ 圖像/圖表 | 🟢 `pillow`、`matplotlib`、`qrcode[pil]` | 圖片處理、數據圖、QR Code |
 | 🎙️ 語音影音 | 🟡 `edge-tts`、`yt-dlp`、`youtube-transcript-api` | 只在旁白、下載、字幕任務選裝 |
@@ -38,10 +38,10 @@
 - **套件**：`python-docx`
 - **一句話**：「把這些題目做成 Word，產出『學生卷（無答案）』和『教師卷（含詳解）』兩份」
 
-**W3. 📚 多份講義合併成一份、批次轉 PDF**　🟡`docxcompose`＋`pywin32`
-- **痛點**：各課 Word 講義散落，要併成一本、再轉 PDF 發給學生
-- **套件**：`docxcompose`（合併）+ `pywin32` COM（轉 PDF）
-- **一句話**：「把這資料夾的 Word 講義依檔名順序合併成一份，再另存成 PDF」
+**W3. 📚 Word 批次轉 PDF／JPG**　🟢`docx2pdf`＋`PyMuPDF`
+- **痛點**：多份 Word 要逐一另存 PDF，再逐頁轉成圖片
+- **套件**：`docx2pdf`（需桌面版 Microsoft Word）+ `PyMuPDF`（PDF 逐頁轉 JPG）
+- **一句話**：「把這資料夾的 Word 全部轉成 PDF，再把每頁輸出成 JPG」
 
 ### 📊 Excel 篇
 
@@ -94,9 +94,9 @@
 - **套件**：`pypdf`、`reportlab`
 - **一句話**：「幫這份 PDF 每頁加上淡灰色浮水印『302 班 期中複習』」
 
-**D3. 🔍 掃描的紙本講義 OCR → 可搜尋、可複製**　🟡`ocrmypdf`（需 Tesseract；部分 Windows 流程還需 Ghostscript）
+**D3. 🔍 掃描的紙本講義 OCR → 可搜尋、可複製**　🟢`ocrmypdf`＋`pypdfium2`＋Tesseract
 - **痛點**：掃描的考古題是圖片，無法選取文字、無法餵 AI
-- **套件**：`ocrmypdf` / `pytesseract`
+- **套件**：`ocrmypdf`、`pypdfium2`、Tesseract（英文／方向／繁中模型）
 - **一句話**：「把這份掃描 PDF 做 OCR，變成可以複製文字的 PDF」
 
 **D4. 🧩 抽課本某幾頁 / PDF 轉圖貼到學習單**　🟢`PyMuPDF`
@@ -120,7 +120,7 @@
 ## 四、核心環境與選用工具
 
 > 不用自己一條條敲——把 [`AGENT_SETUP_教學檔案處理工具包.md`](AGENT_SETUP_教學檔案處理工具包.md)
-> 交給你的 Agent，它只會安裝核心包並驗證，不會在研習現場自動裝進階系統工具。
+> 交給你的 Agent，它會安裝核心包、Tesseract 與繁中模型並驗證；不會自動安裝 Ghostscript、影音或進階 Office 工具。
 
 **核心套件（一鍵，安裝到本 repo 的 `.venv`）**
 
@@ -129,31 +129,30 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\install_windows.ps1"
 ```
 
 核心清單：`python-docx`、`openpyxl`、`python-pptx`、`pypdf`、`PyMuPDF`、
-`reportlab`、`pillow`、`matplotlib`、`qrcode[pil]`、`markitdown[pdf,docx,pptx,xlsx]`。
+`reportlab`、`pillow`、`matplotlib`、`qrcode[pil]`、`markitdown[pdf,docx,pptx,xlsx]`、
+`docx2pdf`、`ocrmypdf`、`pypdfium2`。其中 `docx2pdf` 需要電腦已安裝 Microsoft Word。
 
 **按需求選裝，不要一次全裝**
 
 | 套件 | 原因 |
 |------|------|
-| `docxcompose`、`pywin32`、`docx2pdf` | Word 合併與 Office COM 才需要；後兩者依賴 Windows/macOS 與 Office。 |
+| `docxcompose` | 只有合併多份 Word 才需要；Word 轉 PDF 已由核心 `docx2pdf` 處理。 |
 | `xlsxwriter`、`pandas` | 進階 Excel 輸出與資料分析；一般工作可先用 `openpyxl`。 |
-| `pdfplumber`、`pdf2image`、`fpdf2` | 與核心 PDF 工具重疊；`pdf2image` 還需 Poppler。 |
-| `ocrmypdf` | 需 Tesseract，部分 Windows 功能還需 Ghostscript／管理員操作。 |
+| `pdfplumber`、`pdf2image` | 與核心 PDF 工具重疊；`pdf2image` 還需 Poppler。 |
 | `edge-tts`、`yt-dlp`、`youtube-transcript-api` | 影音或字幕任務才需要。 |
 
 **系統工具（非 pip，需個別安裝）**
 
 | 工具 | 給誰用 | Windows 安裝 |
 |------|--------|--------------|
-| Tesseract（含繁中包 `chi_tra`） | `ocrmypdf` 掃描 OCR | `winget install UB-Mannheim.TesseractOCR` |
+| Tesseract（含繁中包 `chi_tra`） | 核心 `ocrmypdf` 掃描 OCR | 核心腳本自動安裝與設定 |
 | Ghostscript | OCRmyPDF 部分 PDF/A／Windows 流程 | 官方 Windows 安裝可能需手動與管理員權限 |
 | Poppler | `pdf2image` PDF 轉圖 | `winget install oschwartz10612.Poppler` |
 | ffmpeg | `yt-dlp` 下載合併 | `winget install Gyan.FFmpeg` |
 | Microsoft Word | `docx2pdf` Word→PDF | 需安裝 Office（無則改用 LibreOffice） |
 
-> ⚠️ **這些都不是研習必裝。** 若日後選裝，裝完系統工具要重開終端機：Tesseract / Poppler / ffmpeg 會寫進 PATH，但
-> **目前開著的視窗抓的是舊 PATH**，必須重開一個新的終端機（或重啟 Agent），
-> `ocrmypdf`、`pdf2image` 才找得到它們。這是實測踩到的坑。
+> ⚠️ Tesseract 是核心系統元件，Microsoft Word 是 `docx2pdf` 的核心前置。Ghostscript、Poppler、ffmpeg 仍按需求選裝；
+> 裝完會修改 PATH 的系統工具後，需重開終端機或重啟 Agent。
 
 ---
 

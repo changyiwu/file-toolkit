@@ -51,8 +51,8 @@ DATA = [
          "python-docx + openpyxl", "讀班級名單 Excel，套進獎狀 Word 模板，每人產一份並存成 PDF"),
         ("出考卷（學生卷/教師卷分開）", "出完題還要手動刪答案做另一版",
          "python-docx", "把題目做成 Word，產出『學生卷(無答案)』和『教師卷(含詳解)』兩份"),
-        ("講義合併 + 批次轉 PDF", "各課 Word 散落，要併本再轉 PDF",
-         "選用: docxcompose + pywin32", "把資料夾的 Word 講義依檔名合併成一份，再另存成 PDF"),
+        ("Word 批次轉 PDF/JPG", "Word 檔要逐份另存、再逐頁轉圖",
+         "核心: docx2pdf + PyMuPDF", "把資料夾的 Word 全部轉成 PDF，再把每頁輸出成 JPG"),
     ]),
     ("Excel", [
         ("成績計算 + 排名 + 及格標紅", "平均、加權、排名、標紅，每次段考重來",
@@ -78,7 +78,7 @@ DATA = [
         ("加浮水印（防外流）", "講義想加『僅供 ○ 班使用』",
          "pypdf + reportlab", "幫 PDF 每頁加上淡灰色浮水印『302 班 期中複習』"),
         ("掃描講義 OCR → 可編輯", "掃描檔是圖片，無法選字、無法餵 AI",
-         "選用: ocrmypdf + Tesseract", "把掃描 PDF 做 OCR，變成可以複製文字的 PDF"),
+         "核心: ocrmypdf + Tesseract", "把掃描 PDF 做 OCR，變成可以複製文字的 PDF"),
         ("抽課本某幾頁轉圖", "只要課本某張圖貼進學習單",
          "核心: PyMuPDF", "把課本 PDF 第 12 頁轉成圖片，去掉白邊"),
     ]),
@@ -106,7 +106,7 @@ def build():
     flow = []
     flow.append(Paragraph("教學檔案處理工具列表｜老師的 Python 神器清單", TITLE))
     flow.append(Paragraph(
-        "三師爸 Sense Bar・teacher-file-toolkit　|　綠色核心包可一鍵安裝；OCR、影音與 Office 工具按需求選裝。",
+        "三師爸 Sense Bar・teacher-file-toolkit　|　核心包含 Word 轉檔與繁中 OCR；影音與進階 Office 工具按需求選裝。",
         SUB))
     flow.append(Spacer(1, 3 * mm))
 

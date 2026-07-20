@@ -11,7 +11,7 @@
 使用者要求「依這份檔案安裝」時，請遵守：
 
 1. **只在本 repo 內工作**：以本檔所在資料夾為專案根目錄，不要搜尋其他磁碟或其他 Agent 的資料夾。
-2. **只執行核心安裝**：不要安裝下方「選用工具」與「系統工具」，除非使用者明確點名用途。
+2. **只執行核心安裝**：核心包含 Tesseract OCR 與繁中模型；不要安裝其餘選用套件或系統工具，除非使用者明確點名用途。
 3. **不要使用全域 `pip install`**：核心套件安裝到本 repo 的 `.venv`，避免污染使用者原有 Python。
 4. **不要逐項上網研究**：套件與版本交給 `uv` 解析；不要為每個套件另開網頁、產生長篇計畫或重複說明。
 5. **最多重試一次**：失敗時先回報原始錯誤與建議，不要反覆改指令、重裝或自動改用系統管理員權限。
@@ -31,17 +31,20 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\install_windows.ps1"
 
 1. 找到 `uv`；若沒有，透過 WinGet 安裝官方 `astral-sh.uv`。
 2. 以 Python 3.12 建立本 repo 專用的 `.venv`；本機沒有 3.12 時由 `uv` 下載。
-3. 依 [`requirements-core.txt`](requirements-core.txt) 一次安裝核心套件。
-4. 執行 [`verify_core.py`](verify_core.py)；只做一次匯入驗證並回報結果。
+3. 依 [`requirements-core.txt`](requirements-core.txt) 一次安裝 13 項核心套件。
+4. 確認 Microsoft Word；若未安裝，清楚回報 `docx2pdf` 的必要前置，不自動安裝 Office。
+5. 找到 Tesseract；若沒有，透過 WinGet 安裝官方套件，並設定英文、方向與繁中 `chi_tra` 模型。
+6. 執行 [`verify_core.py`](verify_core.py)，驗證套件匯入、Word 轉 PDF 與 OCR 工作流程。
 
 > 安裝期間若 Antigravity、Claude Code、Codex 或 OpenCode 顯示執行指令／安裝程式的權限確認，
-> 請讓使用者看清楚目標是本 repo 的 `.venv` 與官方 `astral-sh.uv` 後自行核准。
+> 請讓使用者看清楚目標是本 repo 的 `.venv`、官方 `astral-sh.uv`、`UB-Mannheim.TesseractOCR`
+> 與使用者層級的 Tesseract 語言資料後自行核准。
 
 ---
 
 ## ✅ 核心必裝套件
 
-這一組涵蓋研習最常見的 Word、Excel、PowerPoint、PDF、圖片、圖表、QR Code 與教材轉 Markdown：
+這 13 項涵蓋研習最常見的 Word、Excel、PowerPoint、PDF、圖片、圖表、QR Code、繁中 OCR 與教材轉 Markdown：
 
 | 套件 | 用途 |
 |------|------|
@@ -55,6 +58,9 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\install_windows.ps1"
 | `matplotlib` | 產生統計圖表 |
 | `qrcode[pil]` | 產生 QR Code |
 | `markitdown[pdf,docx,pptx,xlsx]` | 將 PDF／Word／PPT／Excel 轉成 Markdown |
+| `docx2pdf` | 使用本機 Microsoft Word 將 Word 轉成 PDF |
+| `ocrmypdf` | 將掃描 PDF 轉成可搜尋、可複製的 PDF |
+| `pypdfium2` | 提供 OCRmyPDF 的核心 PDF 轉圖引擎 |
 
 > 重要修正：只裝裸的 `markitdown` 不會啟用所有文件格式。
 > 本工具包改裝 `pdf,docx,pptx,xlsx` 四組官方 extras，才符合影片示範用途。
@@ -70,10 +76,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\install_windows.ps1"
 | `pandas` | 適合大量資料分析；一般讀寫成績表不必先裝。 |
 | `pdfplumber` | 適合精準擷取 PDF 表格；基本抽字先用 PyMuPDF／MarkItDown。 |
 | `pdf2image` | 需另裝 Poppler；PDF 轉圖可先用 PyMuPDF。 |
-| `fpdf2` | 與核心的 `reportlab` 功能重疊。 |
-| `ocrmypdf` | 需 Tesseract，Windows 進階功能還可能需要 Ghostscript；不適合研習現場全自動安裝。 |
-| `docx2pdf` | 只支援 Windows／macOS，且本機必須有 Microsoft Word。 |
-| `pywin32` | 只有 Windows Office COM 自動化才需要。 |
+| `pywin32` | `docx2pdf` 會自動帶入；只有直接撰寫 Office COM 自動化時才需另外操作。 |
 | `edge-tts` | 只有文字轉語音時需要，且會連線到雲端服務。 |
 | `yt-dlp` | 只有下載影音時需要，合併影音通常還要 ffmpeg。 |
 | `youtube-transcript-api` | 只有抓 YouTube 已存在字幕時需要；無字幕影片無法處理。 |
@@ -82,17 +85,17 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\install_windows.ps1"
 
 ---
 
-## ⚙️ 系統工具（不是 pip 套件，預設不要裝）
+## ⚙️ 核心前置與選用系統工具
 
-| 系統工具 | 何時才需要 | 重要限制 |
-|----------|------------|----------|
-| Tesseract OCR | 掃描 PDF／圖片 OCR | 繁體中文還要 `chi_tra` 語言資料。 |
-| Ghostscript | OCRmyPDF 的部分 PDF/A／Windows 流程 | 官方 Windows 安裝可能需管理員與手動安裝。 |
+| 系統工具 | 狀態 | 重要限制 |
+|----------|------|----------|
+| Tesseract OCR | **核心；腳本自動安裝** | 同時設定英文、方向與繁中 `chi_tra` 語言資料。 |
+| Microsoft Word | **核心前置；不自動安裝** | `docx2pdf` 需要有授權的桌面版 Word；沒有時核心驗證會停止並回報。 |
+| Ghostscript | 選用 | OCRmyPDF 17 的基本 OCR 可用 `pypdfium2`；部分 PDF/A 流程才需要。 |
 | Poppler | 使用 `pdf2image` | 核心包已用 PyMuPDF 轉圖，可先不裝。 |
 | ffmpeg | 影音下載、轉檔、合併 | 文件處理不需要。 |
-| Microsoft Office | `docx2pdf`、`pywin32` COM | 沒有 Word／PowerPoint 就不能使用。 |
 
-不要因為讀到這張表就執行 `winget install`。只有使用者明確選擇 OCR、影音或 Office 自動化任務時，才先說明影響並請使用者核准。
+核心腳本只會自動安裝 Tesseract；不要因此安裝 Ghostscript、Poppler、ffmpeg 或 Microsoft Office。這些工具仍需使用者明確點名並核准。
 
 ---
 
@@ -117,7 +120,9 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\install_windows.ps1"
 ✅ uv：已存在／已安裝
 ✅ Python：3.12.x
 ✅ 環境：<本 repo>\.venv
-✅ 核心套件：10/10 匯入成功
+✅ 核心套件：13/13 匯入與煙霧測試成功
+✅ Word 轉檔：Microsoft Word＋docx2pdf 可用
+✅ OCR：Tesseract（eng／osd／chi_tra）＋OCRmyPDF 可用
 🟡 選用套件：未安裝（正確）
 下一步：請使用 .\.venv\Scripts\python.exe 執行本 repo 的 Python 程式
 ```

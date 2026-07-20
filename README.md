@@ -23,7 +23,7 @@
 
 > 「讀這份檔案，只安裝裡面的核心工具，選用工具先不要裝。」
 
-Agent 會執行同一支 PowerShell 腳本，以 Python 3.12 建立本資料夾專用的 `.venv`、安裝 10 項核心工具並驗證。OCR、影音、Office COM 等進階工具不會自動安裝，避免初學者卡在系統相依。
+Agent 會執行同一支 PowerShell 腳本，以 Python 3.12 建立本資料夾專用的 `.venv`、安裝 13 項核心工具並驗證。核心流程會自動安裝 Tesseract OCR、英文／方向／繁中模型，並驗證 `docx2pdf`；電腦必須已安裝有授權的 Microsoft Word。影音與進階 Office 自動化工具不會自動安裝。
 
 也可以在 Windows PowerShell 直接執行：
 
