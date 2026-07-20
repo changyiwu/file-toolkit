@@ -1,8 +1,8 @@
-# 教學檔案處理工具包｜老師的 Python 工具
+# teacher-file-toolkit｜老師的教學檔案處理工具包
 
 > 三師爸 Sense Bar ・ [youtube.com/@sensebar](https://www.youtube.com/@sensebar)
 
-這是一套給教學現場老師使用的檔案處理工具包，涵蓋 Word、Excel、PowerPoint、PDF、圖片、圖表、QR Code 與教材轉 Markdown。
+`teacher-file-toolkit` 是一套給教學現場老師使用的檔案處理工具包，涵蓋 Word、Excel、PowerPoint、PDF、圖片、圖表、QR Code 與教材轉 Markdown。
 
 ## 📦 這個資料夾有什麼
 

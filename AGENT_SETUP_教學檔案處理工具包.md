@@ -126,4 +126,4 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\install_windows.ps1"
 
 ---
 
-> 來源：三師爸 Sense Bar｜教學檔案處理工具包｜youtube.com/@sensebar
+> 來源：三師爸 Sense Bar｜teacher-file-toolkit｜youtube.com/@sensebar
