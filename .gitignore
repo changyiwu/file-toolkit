@@ -9,6 +9,22 @@ __pycache__/
 .venv/
 venv/
 
+# 敏感資料與本機代理程式設定
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.codex/
+.claude/
+
+# 編輯器、相依套件與建置輸出
+.vscode/
+.idea/
+node_modules/
+dist/
+build/
+
 # 暫存
 _preview.*
 _to_remove.txt
