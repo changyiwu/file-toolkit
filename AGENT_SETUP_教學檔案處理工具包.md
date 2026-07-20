@@ -1,0 +1,129 @@
+# 🤖 Agent 安裝指南：教學檔案處理「核心工具包」
+
+> **這份檔案是寫給 AI Agent 讀的。**
+> 適用於 Windows 上的 Claude Code、ChatGPT 的 Codex App、Google Antigravity、OpenCode。
+> 預設只安裝已篩選過的核心工具；進階工具一律不自動安裝。
+
+---
+
+## 🎯 給 Agent 的必要規則
+
+使用者要求「依這份檔案安裝」時，請遵守：
+
+1. **只在本 repo 內工作**：以本檔所在資料夾為專案根目錄，不要搜尋其他磁碟或其他 Agent 的資料夾。
+2. **只執行核心安裝**：不要安裝下方「選用工具」與「系統工具」，除非使用者明確點名用途。
+3. **不要使用全域 `pip install`**：核心套件安裝到本 repo 的 `.venv`，避免污染使用者原有 Python。
+4. **不要逐項上網研究**：套件與版本交給 `uv` 解析；不要為每個套件另開網頁、產生長篇計畫或重複說明。
+5. **最多重試一次**：失敗時先回報原始錯誤與建議，不要反覆改指令、重裝或自動改用系統管理員權限。
+6. **不自動切換執行環境**：Windows、WSL、沙盒是不同環境；不要為了安裝而自行改用 WSL、Docker 或另一個 Agent。
+
+---
+
+## 🚀 Windows 核心安裝（預設只做這段）
+
+在本 repo 根目錄執行：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\install_windows.ps1"
+```
+
+安裝腳本會自動完成：
+
+1. 找到 `uv`；若沒有，透過 WinGet 安裝官方 `astral-sh.uv`。
+2. 以 Python 3.12 建立本 repo 專用的 `.venv`；本機沒有 3.12 時由 `uv` 下載。
+3. 依 [`requirements-core.txt`](requirements-core.txt) 一次安裝核心套件。
+4. 執行 [`verify_core.py`](verify_core.py)；只做一次匯入驗證並回報結果。
+
+> 安裝期間若 Antigravity、Claude Code、Codex 或 OpenCode 顯示執行指令／安裝程式的權限確認，
+> 請讓使用者看清楚目標是本 repo 的 `.venv` 與官方 `astral-sh.uv` 後自行核准。
+
+---
+
+## ✅ 核心必裝套件
+
+這一組涵蓋研習最常見的 Word、Excel、PowerPoint、PDF、圖片、圖表、QR Code 與教材轉 Markdown：
+
+| 套件 | 用途 |
+|------|------|
+| `python-docx` | 生成／讀寫 Word |
+| `openpyxl` | 讀寫與格式化 Excel |
+| `python-pptx` | 生成／改寫 PowerPoint |
+| `pypdf` | PDF 合併、拆分、浮水印 |
+| `PyMuPDF` | PDF 抽文字、抽頁、轉圖片 |
+| `reportlab` | 生成 PDF 與浮水印圖層 |
+| `pillow` | 圖片裁切、去白邊、合成 |
+| `matplotlib` | 產生統計圖表 |
+| `qrcode[pil]` | 產生 QR Code |
+| `markitdown[pdf,docx,pptx,xlsx]` | 將 PDF／Word／PPT／Excel 轉成 Markdown |
+
+> 重要修正：只裝裸的 `markitdown` 不會啟用所有文件格式。
+> 本工具包改裝 `pdf,docx,pptx,xlsx` 四組官方 extras，才符合影片示範用途。
+
+---
+
+## 🟡 非必要／按需求選裝（預設不要裝）
+
+| 套件 | 為什麼不是核心 |
+|------|----------------|
+| `docxcompose` | 只有「合併多份 Word」才需要。 |
+| `xlsxwriter` | 常見 Excel 產生與格式化可先用 `openpyxl` 完成。 |
+| `pandas` | 適合大量資料分析；一般讀寫成績表不必先裝。 |
+| `pdfplumber` | 適合精準擷取 PDF 表格；基本抽字先用 PyMuPDF／MarkItDown。 |
+| `pdf2image` | 需另裝 Poppler；PDF 轉圖可先用 PyMuPDF。 |
+| `fpdf2` | 與核心的 `reportlab` 功能重疊。 |
+| `ocrmypdf` | 需 Tesseract，Windows 進階功能還可能需要 Ghostscript；不適合研習現場全自動安裝。 |
+| `docx2pdf` | 只支援 Windows／macOS，且本機必須有 Microsoft Word。 |
+| `pywin32` | 只有 Windows Office COM 自動化才需要。 |
+| `edge-tts` | 只有文字轉語音時需要，且會連線到雲端服務。 |
+| `yt-dlp` | 只有下載影音時需要，合併影音通常還要 ffmpeg。 |
+| `youtube-transcript-api` | 只有抓 YouTube 已存在字幕時需要；無字幕影片無法處理。 |
+
+使用者之後若明確點名某個任務，再由 Agent 把相應套件裝進同一個 `.venv`。不要一次把這張表全部安裝。
+
+---
+
+## ⚙️ 系統工具（不是 pip 套件，預設不要裝）
+
+| 系統工具 | 何時才需要 | 重要限制 |
+|----------|------------|----------|
+| Tesseract OCR | 掃描 PDF／圖片 OCR | 繁體中文還要 `chi_tra` 語言資料。 |
+| Ghostscript | OCRmyPDF 的部分 PDF/A／Windows 流程 | 官方 Windows 安裝可能需管理員與手動安裝。 |
+| Poppler | 使用 `pdf2image` | 核心包已用 PyMuPDF 轉圖，可先不裝。 |
+| ffmpeg | 影音下載、轉檔、合併 | 文件處理不需要。 |
+| Microsoft Office | `docx2pdf`、`pywin32` COM | 沒有 Word／PowerPoint 就不能使用。 |
+
+不要因為讀到這張表就執行 `winget install`。只有使用者明確選擇 OCR、影音或 Office 自動化任務時，才先說明影響並請使用者核准。
+
+---
+
+## 🧭 四套 Agent 相容性提醒
+
+| Agent | 核心安裝 | 需注意 |
+|-------|----------|--------|
+| ChatGPT 的 Codex App | ✅ | 必須開啟本機 repo／工作區；一般 ChatGPT 對話本身不會替主機安裝套件。 |
+| Claude Code | ✅ | Windows 原生可用 PowerShell；若目前使用 Git Bash，仍請執行上方完整 `powershell.exe` 指令。 |
+| Google Antigravity | ✅ | 預設權限模式會要求使用者核准安裝；若在沙盒模式，套件只會留在沙盒，不會安裝到 Windows repo 的 `.venv`。 |
+| OpenCode | ✅（Windows 原生） | 若 OpenCode 跑在 WSL，WSL 與 Windows 的 Python 環境分開，不能共用 Windows `.venv`，需在 WSL 另建環境。 |
+
+> 「一個 Agent 裝一次，其他 Agent 都能用」只在它們使用**同一個作業系統、同一份 repo、同一個 `.venv`**時成立。
+> Windows、WSL、Docker、雲端與沙盒彼此不能共用 Python 套件。
+
+---
+
+## 📌 給 Agent 的最終回報格式
+
+```text
+核心安裝完成回報：
+✅ uv：已存在／已安裝
+✅ Python：3.12.x
+✅ 環境：<本 repo>\.venv
+✅ 核心套件：10/10 匯入成功
+🟡 選用套件：未安裝（正確）
+下一步：請使用 .\.venv\Scripts\python.exe 執行本 repo 的 Python 程式
+```
+
+若失敗，列出失敗步驟與原始錯誤摘要即可；不要自動安裝選用工具補救。
+
+---
+
+> 來源：三師爸 Sense Bar｜教學檔案處理工具包｜youtube.com/@sensebar

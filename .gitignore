@@ -1,0 +1,24 @@
+# Google Drive 系統檔
+desktop.ini
+*.tmp
+~$*
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# 暫存
+_preview.*
+_to_remove.txt
+*.log
+
+# 其他工作檔（誤放在此資料夾，不納入公開版本）
+115*
+build_115_cap_ppt.py
+cap_examination.html
+gwjh_*
+page13_q2.png
+page_dict_dump.txt
+雙向細目表_*.docx
