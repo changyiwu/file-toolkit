@@ -38,3 +38,6 @@ gwjh_*
 page13_q2.png
 page_dict_dump.txt
 雙向細目表_*.docx
+
+# 交接檔含真實電腦名與本機路徑，只走雲端硬碟同步，不進公開 repo
+handoff.md
