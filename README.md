@@ -16,6 +16,7 @@
 | [`Python範例.md`](Python範例.md) | 完整工具地圖與選用說明 |
 | [`make_pdf.py`](make_pdf.py) | 重新產生 PDF 的腳本 |
 | [`verify_core.py`](verify_core.py) | 核心套件匯入與檔案處理煙霧測試 |
+| [`skill/`](skill/) | 把上述能力打包成的 Agent 技能（`SKILL.md`＋環境腳本＋五份 recipe） |
 
 ## 🚀 安裝核心工具
 
@@ -32,6 +33,15 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\install_windows.ps1"
 ```
 
 > Claude Code、Codex App、Antigravity、OpenCode 在 Windows 原生模式都可使用。若 OpenCode 跑在 WSL，需在 WSL 另建 Linux Python 環境，不能共用 Windows `.venv`。
+
+## 🤖 當成 Agent 技能使用
+
+[`skill/`](skill/) 把這些能力包成一個可安裝的技能（安裝名 `file-toolkit`）。安裝後，直接對 Agent 說
+「把這些 PDF 合併」「用這份名單套印獎狀」「這份掃描 PDF 做 OCR」，它會自己備好環境、挑對寫法並輸出到 `output/`。
+
+- 技能會自動尋找可用環境：`FILE_TOOLKIT_PYTHON` → 專案 `.venv` → 共用環境 `%LOCALAPPDATA%\file-toolkit\.venv`（都沒有就用 `uv` 建立）
+- 五份 recipe（Word／Excel／PPT／PDF／其他）內的程式碼都經過實測
+- 一律輸出新檔，不覆蓋老師的原始教材
 
 ## 🧰 工具清單速覽
 
