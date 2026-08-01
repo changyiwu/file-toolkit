@@ -1,4 +1,4 @@
-# teacher-file-toolkit（專案藍圖）
+# file-toolkit（專案藍圖）
 
 > 本檔為跨 Agent 通用的專案藍圖（AGENTS.md 開放標準）。任何 Agent 的每個 session 都應先讀本檔＋`handoff.md`。
 
@@ -22,7 +22,7 @@
 ## 資料夾結構
 
 ```
-teacher-file-toolkit/
+file-toolkit/
 ├─ README.md                              # 專案用途與初學者使用方式
 ├─ AGENT_SETUP_教學檔案處理工具包.md        # 交給 AI Agent 的安裝與安全指引
 ├─ install_windows.ps1                    # Windows 核心工具安裝腳本
@@ -42,8 +42,8 @@ teacher-file-toolkit/
 | 層級 | 平台 | 位置 | 讀取時機 |
 |------|------|------|---------|
 | L1 | 本地（GDrive） | `agents.md`＋`handoff.md` | 每個 session |
-| L2 | GitHub | https://github.com/changyiwu/teacher-file-toolkit （公開，預設分支 `main`） | 指定時 |
-| L3 | Obsidian | `teacher-file-toolkit/專案工作流程.md` | 有需要時 |
+| L2 | GitHub | https://github.com/changyiwu/file-toolkit （公開，預設分支 `main`） | 指定時 |
+| L3 | Obsidian | `file-toolkit/專案工作流程.md` | 有需要時 |
 
 ## 工作約定
 
@@ -70,4 +70,4 @@ teacher-file-toolkit/
 
 ## 最近進度
 
-- 2026-07-24：專案藍圖改用標準範本格式（補上路線圖 checklist、資料夾結構與同步層級表）；L3 路徑由不存在的「專案駕駛艙.md」更正為 `teacher-file-toolkit/專案工作流程.md`；L2 由「目前沒有設定 Git 遠端」更正為已連接 `changyiwu/teacher-file-toolkit`。
+- 2026-07-24：專案藍圖改用標準範本格式（補上路線圖 checklist、資料夾結構與同步層級表）；L3 路徑由不存在的「專案駕駛艙.md」更正為 `file-toolkit/專案工作流程.md`；L2 由「目前沒有設定 Git 遠端」更正為已連接 `changyiwu/file-toolkit`。

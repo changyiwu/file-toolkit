@@ -106,7 +106,7 @@ def build():
     flow = []
     flow.append(Paragraph("教學檔案處理工具列表｜老師的 Python 神器清單", TITLE))
     flow.append(Paragraph(
-        "三師爸 Sense Bar・teacher-file-toolkit　|　核心包含 Word 轉檔與繁中 OCR；影音與進階 Office 工具按需求選裝。",
+        "三師爸 Sense Bar・file-toolkit　|　核心包含 Word 轉檔與繁中 OCR；影音與進階 Office 工具按需求選裝。",
         SUB))
     flow.append(Spacer(1, 3 * mm))
 

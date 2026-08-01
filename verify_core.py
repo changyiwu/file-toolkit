@@ -144,7 +144,7 @@ def run_smoke_tests() -> None:
 
         image_path = root / "sample.png"
         Image.new("RGB", (32, 32), "white").save(image_path)
-        qrcode.make("https://example.com/teacher-file-toolkit").save(root / "qr.png")
+        qrcode.make("https://example.com/file-toolkit").save(root / "qr.png")
 
         figure = plt.figure(figsize=(2, 1))
         plt.plot([0, 1], [0, 1])
