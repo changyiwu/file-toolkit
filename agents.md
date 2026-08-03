@@ -92,3 +92,5 @@ file-toolkit/
 - **Smart App Control（部分 Windows 11 預設開啟，如 NB-YI）**會封鎖未取得信譽的執行檔與原生 DLL：`uv.exe` 完全不能執行（改用系統 Python 的 `venv`＋`pip` 建環境）、PyMuPDF 的 `_mupdf.pyd` 永久載入失敗（`import fitz` → `No module named 'mupdf'`）。判斷指令：`(Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\CI\Policy').VerifiedAndReputablePolicyState`，`1` 為開啟。**SAC 一旦關閉就無法再開啟（需重設 Windows），不要建議使用者關掉它**
 - `.venv` 綁定建立當下的 base Python 絕對路徑，放在雲端同步資料夾**不能跨電腦共用**；共用環境一律建在 `%LOCALAPPDATA%\file-toolkit\.venv`
 - `ocrmypdf` 執行時會探測選用外部程式，印出數行 `[WinError 2] 系統找不到指定的檔案。` 屬正常，不影響結果
+- 跑 OCR 前必須有 `TESSDATA_PREFIX`。`ensure_ocr.ps1` 會設在使用者層級，但**同一個 session 已開的 shell 讀不到**——要重開 shell 或當場再設一次
+- `pypdfium2` 的 `scale` 以 72 dpi 為 1.0，換算是 `scale = dpi / 72`；抽文字用 `page.get_textpage().get_text_range()`
