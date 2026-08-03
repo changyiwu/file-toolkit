@@ -1,6 +1,6 @@
 # Word 處理 recipe
 
-套件：`python-docx`（讀寫）、`docx2pdf`（轉 PDF，需桌面版 Word）、`PyMuPDF`（PDF 轉圖）、`openpyxl`（讀名單）
+套件：`python-docx`（讀寫）、`docx2pdf`（轉 PDF，需桌面版 Word）、`pypdfium2`（PDF 轉圖）、`openpyxl`（讀名單）
 
 ---
 
@@ -110,7 +110,7 @@ student.save("output/段考題目_學生卷.docx")
 ```python
 # -*- coding: utf-8 -*-
 from pathlib import Path
-import fitz
+import pypdfium2 as pdfium
 from docx2pdf import convert
 
 src_dir = Path("講義")
@@ -120,10 +120,13 @@ jpg_dir = Path("output/jpg"); jpg_dir.mkdir(parents=True, exist_ok=True)
 convert(str(src_dir), str(pdf_dir))            # 整個資料夾一次轉，比逐檔呼叫快
 
 for pdf_path in sorted(pdf_dir.glob("*.pdf")):
-    with fitz.open(pdf_path) as document:
+    document = pdfium.PdfDocument(pdf_path)
+    try:
         for index, page in enumerate(document, start=1):
-            pixmap = page.get_pixmap(dpi=200)   # 200 dpi 夠印講義；要貼簡報用 150
-            pixmap.save(jpg_dir / f"{pdf_path.stem}_p{index:02d}.jpg")
+            image = page.render(scale=200 / 72).to_pil()   # 200 dpi 夠印講義；要貼簡報用 150/72
+            image.convert("RGB").save(jpg_dir / f"{pdf_path.stem}_p{index:02d}.jpg", quality=90)
+    finally:
+        document.close()
 ```
 
 **陷阱**

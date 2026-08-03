@@ -13,7 +13,9 @@ $ScriptRoot = Split-Path -Parent $PSCommandPath
 $RequirementsPath = Join-Path $ScriptRoot 'requirements-core.txt'
 $SharedVenv = Join-Path $env:LOCALAPPDATA 'file-toolkit\.venv'
 $SharedPython = Join-Path $SharedVenv 'Scripts\python.exe'
-$ImportCheck = 'import docx, openpyxl, pptx, pypdf, fitz, reportlab, PIL, matplotlib, qrcode, markitdown, docx2pdf, ocrmypdf, pypdfium2'
+# PyMuPDF (fitz) is installed but deliberately not required here: Windows Smart App Control
+# blocks its native _mupdf.pyd. The recipes use pypdfium2 for rendering and text extraction.
+$ImportCheck = 'import docx, openpyxl, pptx, pypdf, reportlab, PIL, matplotlib, qrcode, markitdown, docx2pdf, ocrmypdf, pypdfium2'
 
 if (-not (Test-Path -LiteralPath $RequirementsPath)) {
     throw "Missing requirements file: $RequirementsPath"

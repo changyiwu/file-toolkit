@@ -4,7 +4,7 @@
 
 ## 專案簡介
 
-提供老師在本機處理 Word、Excel、PowerPoint、PDF、圖片、圖表、QR Code 與 Markdown 教材的工具清單、安裝腳本及驗證方式。目前核心清單 13 項，全部固定版本並通過驗證（`CORE_OK: 13/13`）。本專案不使用 Firebase，也沒有部署目標。
+提供老師在本機處理 Word、Excel、PowerPoint、PDF、圖片、圖表、QR Code 與 Markdown 教材的工具清單、安裝腳本及驗證方式。核心清單 13 項全部固定版本，其中 **12 項為必要**、`PyMuPDF` 為選用（開啟 Smart App Control 的 Windows 會封鎖它的原生 DLL），驗證通過為 `CORE_OK: 12/12`。本專案不使用 Firebase，也沒有部署目標。
 
 ## 關鍵時程
 
@@ -15,10 +15,12 @@
 - [x] 階段一：核心工具清單、安裝腳本 `install_windows.ps1` 與煙霧測試 `verify_core.py` 成形
 - [x] 階段二：納入 `docx2pdf`、`ocrmypdf`、`pypdfium2`，核心清單由 10 項擴充為 13 項
 - [x] 階段三：安裝腳本加上 Word 檢查、自動裝 Tesseract＋繁中模型（固定版本 SHA-256）
-- [x] 階段四：`verify_core.py` 補上 Word 轉 PDF 與圖片型 PDF OCR 實測，`CORE_OK: 13/13` 通過
+- [x] 階段四：`verify_core.py` 補上 Word 轉 PDF 與圖片型 PDF OCR 實測
 - [x] 階段五：把檔案處理能力包裝成 `skill/`（SKILL.md＋環境腳本＋五份 recipe），16 段 recipe 程式碼實測通過
-- [ ] 階段六：以實際教材測試 Word 批次轉 PDF／JPG，以及繁中掃描 PDF OCR
-- [ ] 階段七：只有需要特定 PDF/A 流程時才另外評估 Ghostscript
+- [x] 階段六：PDF 抽文字與轉圖改用 `pypdfium2`，讓技能在開啟 Smart App Control 的電腦也能完整運作（`CORE_OK: 12/12`）
+- [ ] 階段七：把 `Python範例.md`、`教學檔案處理_工具列表.md`、`AGENT_SETUP_教學檔案處理工具包.md` 裡「PDF 轉圖用 PyMuPDF」的敘述同步改為 `pypdfium2`
+- [ ] 階段八：以實際教材測試 Word 批次轉 PDF／JPG，以及繁中掃描 PDF OCR
+- [ ] 階段九：只有需要特定 PDF/A 流程時才另外評估 Ghostscript
 
 ## 資料夾結構
 
@@ -75,8 +77,13 @@ file-toolkit/
 - `chi_tra.traineddata` 不能寫入 `Program Files`，改放 `%LOCALAPPDATA%\Tesseract-OCR\tessdata`（並複製 `configs`／`tessconfigs`）
 - `docx2pdf` 需桌面版 Word，且不支援 `python -m docx2pdf`
 - `.ps1` 一律只寫 ASCII：`powershell.exe`（5.1）會用 Big5 解讀無 BOM 的 UTF-8，中文註解的結尾會吃掉下一行程式碼
+- **Smart App Control（部分 Windows 11 預設開啟，如 NB-YI）**會封鎖未取得信譽的執行檔與原生 DLL：`uv.exe` 完全不能執行（改用系統 Python 的 `venv`＋`pip` 建環境）、PyMuPDF 的 `_mupdf.pyd` 永久載入失敗（`import fitz` → `No module named 'mupdf'`）。判斷指令：`(Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\CI\Policy').VerifiedAndReputablePolicyState`，`1` 為開啟。**SAC 一旦關閉就無法再開啟（需重設 Windows），不要建議使用者關掉它**
+- `.venv` 綁定建立當下的 base Python 絕對路徑，放在雲端同步資料夾**不能跨電腦共用**；共用環境一律建在 `%LOCALAPPDATA%\file-toolkit\.venv`
+- `ocrmypdf` 執行時會探測選用外部程式，印出數行 `[WinError 2] 系統找不到指定的檔案。` 屬正常，不影響結果
 
 ## 最近進度
+
+- 2026-08-03：在 NB-YI 建好核心環境（Python 3.13.14，13 項固定版本；因 SAC 封鎖 uv 而改用 `venv`＋`pip`）與 Tesseract 5.4.0＋繁中模型。PDF 抽文字與轉圖全面由 PyMuPDF 改為 `pypdfium2`（`scale = dpi / 72`），PyMuPDF 降為選用；`verify_core.py` 改判 `CORE_OK: 12/12`＋選用項另報，W3／D3／D4 三段 recipe 以繁中內容實測通過，四家技能副本已同步並逐檔 hash 驗證。
 
 - 2026-08-01：新增 `skill/`，把檔案處理能力包成技能（安裝名 `file-toolkit`）。環境偵測順序為 `FILE_TOOLKIT_PYTHON` → 專案 `.venv` → 共用 `%LOCALAPPDATA%\file-toolkit\.venv`；五份 recipe 共 16 段程式碼以核心環境實測通過。技能腳本必須維持純 ASCII（Windows PowerShell 5.1 會用 Big5 解讀無 BOM 的 UTF-8，中文註解會把下一行吃掉）。
 - 2026-08-01：專案更名 `teacher-file-toolkit` → `file-toolkit`（文件、GitHub repo、本機資料夾、Obsidian 筆記資料夾）。

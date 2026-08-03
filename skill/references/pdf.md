@@ -1,6 +1,10 @@
 # PDF 處理 recipe
 
-套件：`pypdf`（合併拆分）、`PyMuPDF`（`import fitz`，抽文字與轉圖）、`reportlab`（生成頁面）、`ocrmypdf`＋Tesseract（OCR）
+套件：`pypdf`（合併拆分）、`pypdfium2`（抽文字與轉圖）、`reportlab`（生成頁面）、`ocrmypdf`＋Tesseract（OCR）
+
+> 抽文字與轉圖一律用 `pypdfium2`，**不要用 PyMuPDF（`import fitz`）**：有些 Windows 11 開了
+> Smart App Control，PyMuPDF 的原生 DLL `_mupdf.pyd` 會被永久封鎖（`應用程式控制原則已封鎖此檔案`），
+> 而 `pypdfium2` 不受影響。`pypdfium2` 的 `scale` 以 72 dpi 為 1.0，所以 `scale = dpi / 72`。
 
 ---
 
@@ -103,8 +107,8 @@ with open("output/講義_浮水印.pdf", "wb") as file:
 ```python
 # -*- coding: utf-8 -*-
 from pathlib import Path
-import fitz
 import ocrmypdf
+import pypdfium2 as pdfium
 
 source = Path("掃描講義.pdf")
 target = Path("output/掃描講義_OCR.pdf")
@@ -121,8 +125,11 @@ ocrmypdf.ocr(
     deskew=True,                     # 掃歪的紙本先校正
 )
 
-with fitz.open(target) as document:
-    text = "\n".join(page.get_text() for page in document)
+document = pdfium.PdfDocument(target)
+try:
+    text = "\n".join(page.get_textpage().get_text_range() for page in document)
+finally:
+    document.close()
 print(f"抽到 {len(text.strip())} 字")
 print(text[:200])
 ```
@@ -140,28 +147,30 @@ print(text[:200])
 
 ```python
 # -*- coding: utf-8 -*-
-import io
 from pathlib import Path
-import fitz
+import pypdfium2 as pdfium
 from PIL import Image, ImageChops
 
 PAGES = [12]              # 人看到的頁碼
 DPI = 300                 # 要貼進學習單列印用 300
 
 Path("output").mkdir(exist_ok=True)
-with fitz.open("課本.pdf") as document:
+document = pdfium.PdfDocument("課本.pdf")
+try:
     for page_number in PAGES:
-        pixmap = document[page_number - 1].get_pixmap(dpi=DPI)
-        image = Image.open(io.BytesIO(pixmap.tobytes("png"))).convert("RGB")
+        page = document[page_number - 1]
+        image = page.render(scale=DPI / 72).to_pil().convert("RGB")   # scale 以 72 dpi 為 1.0
 
         background = Image.new("RGB", image.size, (255, 255, 255))
-        bbox = ImageChops.difference(image, background).getbbox()   # 去白邊
+        bbox = ImageChops.difference(image, background).getbbox()     # 去白邊
         if bbox:
             image = image.crop(bbox)
 
         image.save(f"output/課本_p{page_number}.png")
+finally:
+    document.close()
 ```
 
-- 只要頁面上的某一張圖（不是整頁）：`document[i].get_images()` ＋ `document.extract_image(xref)`
-- 抽文字：`page.get_text()`；抽不到就是圖片型 PDF，要先做 D3 的 OCR
+- 抽文字：`page.get_textpage().get_text_range()`；抽不到就是圖片型 PDF，要先做 D3 的 OCR
+- 只要頁面上的某一張圖（不是整頁）：核心包沒有直接抽內嵌圖的簡單做法，先整頁轉圖再裁切
 - 轉 JPG 用 `image.save(..., quality=90)`；有透明背景要先 `convert("RGB")`

@@ -16,7 +16,6 @@ MODULES = {
     "openpyxl": "openpyxl",
     "pptx": "python-pptx",
     "pypdf": "pypdf",
-    "fitz": "PyMuPDF",
     "reportlab": "reportlab",
     "PIL": "Pillow",
     "matplotlib": "matplotlib",
@@ -26,6 +25,10 @@ MODULES = {
     "ocrmypdf": "ocrmypdf",
     "pypdfium2": "pypdfium2",
 }
+
+# PyMuPDF 仍在 requirements-core.txt 裡，但不列為必要：開了 Smart App Control 的 Windows
+# 會封鎖它的原生 DLL `_mupdf.pyd`。recipe 的抽文字與轉圖一律改用 pypdfium2。
+OPTIONAL_MODULES = {"fitz": "PyMuPDF"}
 
 
 def find_word() -> Path | None:
@@ -92,9 +95,9 @@ def verify_external_tools() -> Path:
 
 
 def run_smoke_tests() -> None:
-    import fitz
     import matplotlib
     import ocrmypdf
+    import pypdfium2
     import qrcode
     from docx import Document
     from docx2pdf import convert as convert_docx_to_pdf
@@ -138,9 +141,12 @@ def run_smoke_tests() -> None:
         pdf_canvas.drawString(72, 720, "TEACHER FILE PDF")
         pdf_canvas.save()
         assert len(PdfReader(pdf_path).pages) == 1
-        with fitz.open(pdf_path) as pdf_document:
-            assert pdf_document.page_count == 1
-            pdf_document[0].get_pixmap(matrix=fitz.Matrix(0.5, 0.5))
+        pdf_document = pypdfium2.PdfDocument(pdf_path)
+        try:
+            assert len(pdf_document) == 1
+            pdf_document[0].render(scale=0.5).to_pil()
+        finally:
+            pdf_document.close()
 
         image_path = root / "sample.png"
         Image.new("RGB", (32, 32), "white").save(image_path)
@@ -180,8 +186,11 @@ def run_smoke_tests() -> None:
             optimize=0,
             progress_bar=False,
         )
-        with fitz.open(ocr_pdf_path) as ocr_document:
-            ocr_text = " ".join(page.get_text() for page in ocr_document)
+        ocr_document = pypdfium2.PdfDocument(ocr_pdf_path)
+        try:
+            ocr_text = " ".join(page.get_textpage().get_text_range() for page in ocr_document)
+        finally:
+            ocr_document.close()
         assert "OCR" in ocr_text and "123" in ocr_text, "OCRmyPDF text smoke test failed"
 
 
@@ -208,6 +217,12 @@ def main() -> int:
 
     version = '.'.join(str(part) for part in sys.version_info[:3])
     print(f"CORE_OK: {len(MODULES)}/{len(MODULES)} imports and file smoke tests (Python {version})")
+    for module_name, package_name in OPTIONAL_MODULES.items():
+        try:
+            importlib.import_module(module_name)
+            print(f"OPTIONAL_OK: {package_name}")
+        except Exception as exc:
+            print(f"OPTIONAL_UNAVAILABLE: {package_name}: {type(exc).__name__}: {exc}")
     return 0
 
 
