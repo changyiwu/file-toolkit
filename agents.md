@@ -54,6 +54,18 @@ file-toolkit/
 | L2 | GitHub | https://github.com/changyiwu/file-toolkit （公開，預設分支 `main`） | 指定時 |
 | L3 | Obsidian | `file-toolkit/專案工作流程.md` | 有需要時 |
 
+## 三個檔案的職責（依「時效性」分家，不是依「詳細程度」）
+
+| 檔案 | 時效 | 寫入方式 | 放什麼 |
+|------|------|---------|--------|
+| `handoff.md` | **只對下一個 session 有效**，過期即丟 | 每次收工整份重寫 | 做到哪、下一步、**這次**的暫時 workaround |
+| `agents.md`（本檔） | **長期有效**，每個 session 都適用 | 只有規則本身變了才改 | 目標、路線圖、常設規則、結構 |
+| Obsidian／`git log` | **歷史**：發生過什麼、為什麼 | 只增不刪 | 決策紀錄、踩坑完整版、逐次進度 |
+
+驗收標準：**`handoff.md` 整份刪掉，不應損失任何長期資訊**——會的話代表該升級進本檔卻沒升級。
+
+**本檔不要出現的東西**：❌ `## 最近進度`／逐次工作紀錄、❌ 決策理由與踩坑完整版。2026-08-03 移除了 `## 最近進度`，內容逐條比對後已在 L3 筆記的〈🗓️ 最近更動紀錄〉——**是主動移除，不是遺漏，不要補回來**。踩過的坑只把**結論**收斂成一條祈使句寫進〈工作約定〉，原因留 L3。
+
 ## 工作約定
 
 - 任何 Agent、任何電腦：**開工先讀 `handoff.md`，收工必更新 `handoff.md`**
@@ -80,12 +92,3 @@ file-toolkit/
 - **Smart App Control（部分 Windows 11 預設開啟，如 NB-YI）**會封鎖未取得信譽的執行檔與原生 DLL：`uv.exe` 完全不能執行（改用系統 Python 的 `venv`＋`pip` 建環境）、PyMuPDF 的 `_mupdf.pyd` 永久載入失敗（`import fitz` → `No module named 'mupdf'`）。判斷指令：`(Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\CI\Policy').VerifiedAndReputablePolicyState`，`1` 為開啟。**SAC 一旦關閉就無法再開啟（需重設 Windows），不要建議使用者關掉它**
 - `.venv` 綁定建立當下的 base Python 絕對路徑，放在雲端同步資料夾**不能跨電腦共用**；共用環境一律建在 `%LOCALAPPDATA%\file-toolkit\.venv`
 - `ocrmypdf` 執行時會探測選用外部程式，印出數行 `[WinError 2] 系統找不到指定的檔案。` 屬正常，不影響結果
-
-## 最近進度
-
-- 2026-08-03：在 NB-YI 建好核心環境（Python 3.13.14，13 項固定版本；因 SAC 封鎖 uv 而改用 `venv`＋`pip`）與 Tesseract 5.4.0＋繁中模型。PDF 抽文字與轉圖全面由 PyMuPDF 改為 `pypdfium2`（`scale = dpi / 72`），PyMuPDF 降為選用；`verify_core.py` 改判 `CORE_OK: 12/12`＋選用項另報，W3／D3／D4 三段 recipe 以繁中內容實測通過，四家技能副本已同步並逐檔 hash 驗證。
-
-- 2026-08-01：新增 `skill/`，把檔案處理能力包成技能（安裝名 `file-toolkit`）。環境偵測順序為 `FILE_TOOLKIT_PYTHON` → 專案 `.venv` → 共用 `%LOCALAPPDATA%\file-toolkit\.venv`；五份 recipe 共 16 段程式碼以核心環境實測通過。技能腳本必須維持純 ASCII（Windows PowerShell 5.1 會用 Big5 解讀無 BOM 的 UTF-8，中文註解會把下一行吃掉）。
-- 2026-08-01：專案更名 `teacher-file-toolkit` → `file-toolkit`（文件、GitHub repo、本機資料夾、Obsidian 筆記資料夾）。
-
-- 2026-07-24：專案藍圖改用標準範本格式（補上路線圖 checklist、資料夾結構與同步層級表）；L3 路徑由不存在的「專案駕駛艙.md」更正為 `file-toolkit/專案工作流程.md`；L2 由「目前沒有設定 Git 遠端」更正為已連接 `changyiwu/file-toolkit`。
