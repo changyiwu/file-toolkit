@@ -31,10 +31,10 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\install_windows.ps1"
 
 1. 找到 `uv`；若沒有，透過 WinGet 安裝官方 `astral-sh.uv`。
 2. 以 Python 3.12 建立本 repo 專用的 `.venv`；本機沒有 3.12 時由 `uv` 下載。
-3. 依 [`requirements-core.txt`](requirements-core.txt) 一次安裝 13 項核心套件。
+3. 依 [`requirements-core.txt`](requirements-core.txt) 一次安裝 13 項套件（12 項必要＋選用的 `PyMuPDF`）。
 4. 確認 Microsoft Word；若未安裝，清楚回報 `docx2pdf` 的必要前置，不自動安裝 Office。
 5. 找到 Tesseract；若沒有，透過 WinGet 安裝官方套件，並設定英文、方向與繁中 `chi_tra` 模型。
-6. 執行 [`verify_core.py`](verify_core.py)，驗證套件匯入、Word 轉 PDF 與 OCR 工作流程。
+6. 執行 [`verify_core.py`](verify_core.py)，驗證套件匯入、Word 轉 PDF 與 OCR 工作流程；通過標準是 `CORE_OK: 12/12`。
 
 > 安裝期間若 Antigravity、Claude Code、Codex 或 OpenCode 顯示執行指令／安裝程式的權限確認，
 > 請讓使用者看清楚目標是本 repo 的 `.venv`、官方 `astral-sh.uv`、`UB-Mannheim.TesseractOCR`
@@ -44,7 +44,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\install_windows.ps1"
 
 ## ✅ 核心必裝套件
 
-這 13 項涵蓋研習最常見的 Word、Excel、PowerPoint、PDF、圖片、圖表、QR Code、繁中 OCR 與教材轉 Markdown：
+這 12 項涵蓋研習最常見的 Word、Excel、PowerPoint、PDF、圖片、圖表、QR Code、繁中 OCR 與教材轉 Markdown：
 
 | 套件 | 用途 |
 |------|------|
@@ -52,7 +52,6 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\install_windows.ps1"
 | `openpyxl` | 讀寫與格式化 Excel |
 | `python-pptx` | 生成／改寫 PowerPoint |
 | `pypdf` | PDF 合併、拆分、浮水印 |
-| `PyMuPDF` | PDF 抽文字、抽頁、轉圖片 |
 | `reportlab` | 生成 PDF 與浮水印圖層 |
 | `pillow` | 圖片裁切、去白邊、合成 |
 | `matplotlib` | 產生統計圖表 |
@@ -60,10 +59,17 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\install_windows.ps1"
 | `markitdown[pdf,docx,pptx,xlsx]` | 將 PDF／Word／PPT／Excel 轉成 Markdown |
 | `docx2pdf` | 使用本機 Microsoft Word 將 Word 轉成 PDF |
 | `ocrmypdf` | 將掃描 PDF 轉成可搜尋、可複製的 PDF |
-| `pypdfium2` | 提供 OCRmyPDF 的核心 PDF 轉圖引擎 |
+| `pypdfium2` | PDF 抽文字、轉圖片；同時是 OCRmyPDF 的核心轉圖引擎 |
 
 > 重要修正：只裝裸的 `markitdown` 不會啟用所有文件格式。
 > 本工具包改裝 `pdf,docx,pptx,xlsx` 四組官方 extras，才符合影片示範用途。
+
+> ⚠️ **PDF 抽文字與轉圖一律用 `pypdfium2`，不要用 `PyMuPDF`（`import fitz`）。**
+> `requirements-core.txt` 裡仍有第 13 項 `PyMuPDF`，但它是**選用**的：部分 Windows 11 預設開啟
+> Smart App Control，會永久封鎖它的原生 DLL `_mupdf.pyd`（`import fitz` → `No module named 'mupdf'`），
+> 而 `pypdfium2` 不受影響。因此**驗證通過的標準是 `CORE_OK: 12/12`**；
+> `OPTIONAL_UNAVAILABLE: PyMuPDF` 屬正常，不需要排除，也不要建議使用者關閉 Smart App Control
+> （它一旦關閉就無法再開啟，必須重設 Windows）。
 
 ---
 
@@ -74,8 +80,9 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\install_windows.ps1"
 | `docxcompose` | 只有「合併多份 Word」才需要。 |
 | `xlsxwriter` | 常見 Excel 產生與格式化可先用 `openpyxl` 完成。 |
 | `pandas` | 適合大量資料分析；一般讀寫成績表不必先裝。 |
-| `pdfplumber` | 適合精準擷取 PDF 表格；基本抽字先用 PyMuPDF／MarkItDown。 |
-| `pdf2image` | 需另裝 Poppler；PDF 轉圖可先用 PyMuPDF。 |
+| `PyMuPDF` | 抽文字與轉圖已由 `pypdfium2` 負責；部分 Windows 11 的 Smart App Control 會封鎖它的原生 DLL。 |
+| `pdfplumber` | 適合精準擷取 PDF 表格；基本抽字先用 `pypdfium2`／MarkItDown。 |
+| `pdf2image` | 需另裝 Poppler；PDF 轉圖可先用 `pypdfium2`。 |
 | `pywin32` | `docx2pdf` 會自動帶入；只有直接撰寫 Office COM 自動化時才需另外操作。 |
 | `edge-tts` | 只有文字轉語音時需要，且會連線到雲端服務。 |
 | `yt-dlp` | 只有下載影音時需要，合併影音通常還要 ffmpeg。 |
@@ -92,7 +99,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\install_windows.ps1"
 | Tesseract OCR | **核心；腳本自動安裝** | 同時設定英文、方向與繁中 `chi_tra` 語言資料。 |
 | Microsoft Word | **核心前置；不自動安裝** | `docx2pdf` 需要有授權的桌面版 Word；沒有時核心驗證會停止並回報。 |
 | Ghostscript | 選用 | OCRmyPDF 17 的基本 OCR 可用 `pypdfium2`；部分 PDF/A 流程才需要。 |
-| Poppler | 使用 `pdf2image` | 核心包已用 PyMuPDF 轉圖，可先不裝。 |
+| Poppler | 使用 `pdf2image` | 核心包已用 `pypdfium2` 轉圖，可先不裝。 |
 | ffmpeg | 影音下載、轉檔、合併 | 文件處理不需要。 |
 
 核心腳本只會自動安裝 Tesseract；不要因此安裝 Ghostscript、Poppler、ffmpeg 或 Microsoft Office。這些工具仍需使用者明確點名並核准。

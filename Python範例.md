@@ -15,7 +15,7 @@
 | 📄 Word | 🟢 `python-docx`、`docx2pdf`；🟡 `docxcompose` | 生成/讀寫、Word 轉 PDF/JPG；選用合併 Word |
 | 📊 Excel | 🟢 `openpyxl`；🟡 `pandas`、`xlsxwriter` | 一般讀寫；選用進階分析/輸出 |
 | 📑 PPT | 🟢 `python-pptx` | 生成/改寫 PowerPoint |
-| 📕 PDF | 🟢 `PyMuPDF`、`pypdf`、`reportlab`、`ocrmypdf`、`pypdfium2` | 合併/拆分/抽文字/轉圖/浮水印/生成/OCR |
+| 📕 PDF | 🟢 `pypdf`、`pypdfium2`、`reportlab`、`ocrmypdf`；🟡 `PyMuPDF` | 合併/拆分/抽文字/轉圖/浮水印/生成/OCR |
 | 🔄 轉檔 | 🟢 `markitdown[pdf,docx,pptx,xlsx]` | 常用文件轉 Markdown |
 | 🖼️ 圖像/圖表 | 🟢 `pillow`、`matplotlib`、`qrcode[pil]` | 圖片處理、數據圖、QR Code |
 | 🎙️ 語音影音 | 🟡 `edge-tts`、`yt-dlp`、`youtube-transcript-api` | 只在旁白、下載、字幕任務選裝 |
@@ -38,9 +38,9 @@
 - **套件**：`python-docx`
 - **一句話**：「把這些題目做成 Word，產出『學生卷（無答案）』和『教師卷（含詳解）』兩份」
 
-**W3. 📚 Word 批次轉 PDF／JPG**　🟢`docx2pdf`＋`PyMuPDF`
+**W3. 📚 Word 批次轉 PDF／JPG**　🟢`docx2pdf`＋`pypdfium2`
 - **痛點**：多份 Word 要逐一另存 PDF，再逐頁轉成圖片
-- **套件**：`docx2pdf`（需桌面版 Microsoft Word）+ `PyMuPDF`（PDF 逐頁轉 JPG）
+- **套件**：`docx2pdf`（需桌面版 Microsoft Word）+ `pypdfium2`（PDF 逐頁轉 JPG）
 - **一句話**：「把這資料夾的 Word 全部轉成 PDF，再把每頁輸出成 JPG」
 
 ### 📊 Excel 篇
@@ -86,7 +86,7 @@
 
 **D1. 📎 考卷合併 / 拆分 / 重新排序**　🟢
 - **痛點**：考古題、學生作業散在幾十個 PDF
-- **套件**：`pypdf`、`PyMuPDF`
+- **套件**：`pypdf`、`pypdfium2`
 - **一句話**：「把這些 PDF 合併成一份，並把第 5～8 頁單獨抽出來另存」
 
 **D2. 💧 PDF 加浮水印（班級／姓名／防外流）**　🟢
@@ -99,9 +99,9 @@
 - **套件**：`ocrmypdf`、`pypdfium2`、Tesseract（英文／方向／繁中模型）
 - **一句話**：「把這份掃描 PDF 做 OCR，變成可以複製文字的 PDF」
 
-**D4. 🧩 抽課本某幾頁 / PDF 轉圖貼到學習單**　🟢`PyMuPDF`
+**D4. 🧩 抽課本某幾頁 / PDF 轉圖貼到學習單**　🟢`pypdfium2`
 - **痛點**：只要課本某張圖、某幾頁貼進學習單
-- **套件**：`PyMuPDF`
+- **套件**：`pypdfium2`（`scale = dpi / 72`）
 - **一句話**：「把這份課本 PDF 的第 12 頁轉成圖片，去掉白邊」
 
 ---
@@ -128,9 +128,15 @@
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\install_windows.ps1"
 ```
 
-核心清單：`python-docx`、`openpyxl`、`python-pptx`、`pypdf`、`PyMuPDF`、
+核心清單：`python-docx`、`openpyxl`、`python-pptx`、`pypdf`、`pypdfium2`、
 `reportlab`、`pillow`、`matplotlib`、`qrcode[pil]`、`markitdown[pdf,docx,pptx,xlsx]`、
-`docx2pdf`、`ocrmypdf`、`pypdfium2`。其中 `docx2pdf` 需要電腦已安裝 Microsoft Word。
+`docx2pdf`、`ocrmypdf`，共 12 項必要；另有選用的 `PyMuPDF`。
+其中 `docx2pdf` 需要電腦已安裝 Microsoft Word。
+
+> ⚠️ **PDF 抽文字與轉圖一律用 `pypdfium2`，不要用 `PyMuPDF`（`import fitz`）**：
+> 部分 Windows 11 預設開啟 Smart App Control，會永久封鎖 PyMuPDF 的原生 DLL `_mupdf.pyd`，
+> 而 `pypdfium2` 不受影響。它仍列在 `requirements-core.txt` 裡，但裝不起來或載入失敗都不影響驗證
+> （通過標準是 `CORE_OK: 12/12`）。
 
 **按需求選裝，不要一次全裝**
 

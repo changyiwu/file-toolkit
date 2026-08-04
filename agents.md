@@ -18,7 +18,7 @@
 - [x] 階段四：`verify_core.py` 補上 Word 轉 PDF 與圖片型 PDF OCR 實測
 - [x] 階段五：把檔案處理能力包裝成 `skill/`（SKILL.md＋環境腳本＋五份 recipe），16 段 recipe 程式碼實測通過
 - [x] 階段六：PDF 抽文字與轉圖改用 `pypdfium2`，讓技能在開啟 Smart App Control 的電腦也能完整運作（`CORE_OK: 12/12`）
-- [ ] 階段七：把 `Python範例.md`、`教學檔案處理_工具列表.md`、`AGENT_SETUP_教學檔案處理工具包.md` 裡「PDF 轉圖用 PyMuPDF」的敘述同步改為 `pypdfium2`
+- [x] 階段七：把 `Python範例.md`、`教學檔案處理_工具列表.md`、`AGENT_SETUP_教學檔案處理工具包.md`（連同 `make_pdf.py` 與工具列表 PDF）裡「PDF 轉圖用 PyMuPDF」的敘述同步改為 `pypdfium2`
 - [ ] 階段八：以實際教材測試 Word 批次轉 PDF／JPG，以及繁中掃描 PDF OCR
 - [ ] 階段九：只有需要特定 PDF/A 流程時才另外評估 Ghostscript
 
@@ -75,7 +75,8 @@ file-toolkit/
 - 保留既有 Git 歷史與 `main` 分支
 - 本專案位於雲端同步資料夾，Git 本機設定應維持 `windows.appendAtomically=false`
 - 更新 Obsidian 專案筆記時，不要修改 `02-知識庫/log.md`
-- 修改工具清單後，如需同步 PDF，使用 `make_pdf.py` 重新產生並一併驗證
+- 修改工具清單後，如需同步 PDF，使用 `make_pdf.py` 重新產生並一併驗證（`make_pdf.py` 的表格是硬寫在程式裡的，不是讀 `.md`，兩邊都要改）
+- PDF 抽文字與轉圖一律用 `pypdfium2`，程式碼與說明文件都不要再出現「用 PyMuPDF／`import fitz`」的敘述
 
 ## 安全邊界
 
