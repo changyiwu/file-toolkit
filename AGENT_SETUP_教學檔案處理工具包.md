@@ -12,7 +12,7 @@
 
 1. **只在本 repo 內工作**：以本檔所在資料夾為專案根目錄，不要搜尋其他磁碟或其他 Agent 的資料夾。
 2. **只執行核心安裝**：核心包含 Tesseract OCR 與繁中模型；不要安裝其餘選用套件或系統工具，除非使用者明確點名用途。
-3. **不要使用全域 `pip install`**：核心套件安裝到本 repo 的 `.venv`，避免污染使用者原有 Python。
+3. **不要使用全域 `pip install`**：核心套件安裝到共用環境 `%LOCALAPPDATA%\file-toolkit\.venv`，避免污染使用者原有 Python。也不要改建在本 repo 內——repo 位於雲端同步資料夾，venv 綁死 base Python 的絕對路徑，換電腦會壞。
 4. **不要逐項上網研究**：套件與版本交給 `uv` 解析；不要為每個套件另開網頁、產生長篇計畫或重複說明。
 5. **最多重試一次**：失敗時先回報原始錯誤與建議，不要反覆改指令、重裝或自動改用系統管理員權限。
 6. **不自動切換執行環境**：Windows、WSL、沙盒是不同環境；不要為了安裝而自行改用 WSL、Docker 或另一個 Agent。
@@ -30,14 +30,14 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\install_windows.ps1"
 安裝腳本會自動完成：
 
 1. 找到 `uv`；若沒有，透過 WinGet 安裝官方 `astral-sh.uv`。
-2. 以 Python 3.12 建立本 repo 專用的 `.venv`；本機沒有 3.12 時由 `uv` 下載。
+2. 以 Python 3.12 建立共用環境 `%LOCALAPPDATA%\file-toolkit\.venv`（與 `skill/scripts/ensure_env.ps1` 同一份）；本機沒有 3.12 時由 `uv` 下載。
 3. 依 [`requirements-core.txt`](requirements-core.txt) 一次安裝 13 項套件（12 項必要＋選用的 `PyMuPDF`）。
 4. 確認 Microsoft Word；若未安裝，清楚回報 `docx2pdf` 的必要前置，不自動安裝 Office。
 5. 找到 Tesseract；若沒有，透過 WinGet 安裝官方套件，並設定英文、方向與繁中 `chi_tra` 模型。
 6. 執行 [`verify_core.py`](verify_core.py)，驗證套件匯入、Word 轉 PDF 與 OCR 工作流程；通過標準是 `CORE_OK: 12/12`。
 
 > 安裝期間若 Antigravity、Claude Code、Codex 或 OpenCode 顯示執行指令／安裝程式的權限確認，
-> 請讓使用者看清楚目標是本 repo 的 `.venv`、官方 `astral-sh.uv`、`UB-Mannheim.TesseractOCR`
+> 請讓使用者看清楚目標是 `%LOCALAPPDATA%\file-toolkit\.venv`、官方 `astral-sh.uv`、`UB-Mannheim.TesseractOCR`
 > 與使用者層級的 Tesseract 語言資料後自行核准。
 
 ---
@@ -112,10 +112,10 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\install_windows.ps1"
 |-------|----------|--------|
 | ChatGPT 的 Codex App | ✅ | 必須開啟本機 repo／工作區；一般 ChatGPT 對話本身不會替主機安裝套件。 |
 | Claude Code | ✅ | Windows 原生可用 PowerShell；若目前使用 Git Bash，仍請執行上方完整 `powershell.exe` 指令。 |
-| Google Antigravity | ✅ | 預設權限模式會要求使用者核准安裝；若在沙盒模式，套件只會留在沙盒，不會安裝到 Windows repo 的 `.venv`。 |
-| OpenCode | ✅（Windows 原生） | 若 OpenCode 跑在 WSL，WSL 與 Windows 的 Python 環境分開，不能共用 Windows `.venv`，需在 WSL 另建環境。 |
+| Google Antigravity | ✅ | 預設權限模式會要求使用者核准安裝；若在沙盒模式，套件只會留在沙盒，不會安裝到 Windows 的共用環境。 |
+| OpenCode | ✅（Windows 原生） | 若 OpenCode 跑在 WSL，WSL 與 Windows 的 Python 環境分開，不能共用 Windows 的 venv，需在 WSL 另建環境。 |
 
-> 「一個 Agent 裝一次，其他 Agent 都能用」只在它們使用**同一個作業系統、同一份 repo、同一個 `.venv`**時成立。
+> 「一個 Agent 裝一次，其他 Agent 都能用」只在它們使用**同一個作業系統、同一個共用環境**時成立。
 > Windows、WSL、Docker、雲端與沙盒彼此不能共用 Python 套件。
 
 ---
@@ -126,12 +126,12 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\install_windows.ps1"
 核心安裝完成回報：
 ✅ uv：已存在／已安裝
 ✅ Python：3.12.x
-✅ 環境：<本 repo>\.venv
+✅ 環境：%LOCALAPPDATA%\file-toolkit\.venv
 ✅ 核心套件：13/13 匯入與煙霧測試成功
 ✅ Word 轉檔：Microsoft Word＋docx2pdf 可用
 ✅ OCR：Tesseract（eng／osd／chi_tra）＋OCRmyPDF 可用
 🟡 選用套件：未安裝（正確）
-下一步：請使用 .\.venv\Scripts\python.exe 執行本 repo 的 Python 程式
+下一步：請使用 %LOCALAPPDATA%\file-toolkit\.venv\Scripts\python.exe 執行本 repo 的 Python 程式
 ```
 
 若失敗，列出失敗步驟與原始錯誤摘要即可；不要自動安裝選用工具補救。

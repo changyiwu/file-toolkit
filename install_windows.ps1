@@ -8,7 +8,10 @@ $OutputEncoding = [Console]::OutputEncoding
 $env:PYTHONUTF8 = '1'
 
 $RepoRoot = Split-Path -Parent $PSCommandPath
-$VenvPath = Join-Path $RepoRoot '.venv'
+# Shared with skill/scripts/ensure_env.ps1 so both install into the same environment.
+# Never place the venv inside the repo: this repo lives in a cloud-synced folder, and a
+# venv hardcodes the absolute path of its base Python, so it breaks on another machine.
+$VenvPath = Join-Path $env:LOCALAPPDATA 'file-toolkit\.venv'
 $RequirementsPath = Join-Path $RepoRoot 'requirements-core.txt'
 $VerifyPath = Join-Path $RepoRoot 'verify_core.py'
 $PythonPath = Join-Path $VenvPath 'Scripts\python.exe'
@@ -118,18 +121,21 @@ if (-not $UvPath) {
 }
 
 Write-Host "uv: $UvPath"
-Write-Host '[2/6] Creating the Python 3.12 environment...'
+Write-Host "[2/6] Preparing the shared Python environment at $VenvPath ..."
 if (Test-Path -LiteralPath $PythonPath) {
+    # Reuse anything 3.12 or newer. This environment is shared with the skill, so an exact
+    # 3.12 requirement would reject a working newer one and tell the user to delete it.
     $ExistingVersion = & $PythonPath -c "import platform; print(platform.python_version())"
-    if ($LASTEXITCODE -ne 0 -or $ExistingVersion -notmatch '^3\.12\.') {
-        throw "An existing .venv uses Python $ExistingVersion. It was not removed. Rename it or choose another folder, then run this script again."
+    $ParsedVersion = $null
+    if ($LASTEXITCODE -ne 0 -or -not [version]::TryParse($ExistingVersion, [ref]$ParsedVersion) -or $ParsedVersion -lt [version]'3.12') {
+        throw "The shared environment at $VenvPath uses Python $ExistingVersion, which is older than 3.12. It was not removed. Delete that folder and run this script again; the skill will rebuild it on next use."
     }
-    Write-Host "Reusing existing .venv (Python $ExistingVersion)."
+    Write-Host "Reusing the existing shared environment (Python $ExistingVersion)."
 }
 else {
     & $UvPath venv --python 3.12 $VenvPath --quiet
     if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $PythonPath)) {
-        throw 'Failed to create .venv.'
+        throw "Failed to create the shared environment at $VenvPath."
     }
 }
 

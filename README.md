@@ -8,13 +8,10 @@
 
 | 檔案 | 說明 |
 |------|------|
-| [`教學檔案處理_工具列表.md`](教學檔案處理_工具列表.md) | 老師的 Python 工具清單（痛點／套件／一句話） |
-| [`教學檔案處理_工具列表.pdf`](教學檔案處理_工具列表.pdf) | 上面清單的一頁式 PDF，方便列印／下載 |
+| [`教學檔案處理_工具列表.md`](教學檔案處理_工具列表.md) | 工具地圖：痛點／套件／一句話，加上安裝與選裝說明 |
 | [`AGENT_SETUP_教學檔案處理工具包.md`](AGENT_SETUP_教學檔案處理工具包.md) | 給 AI Agent 讀的安全安裝指南 |
 | [`install_windows.ps1`](install_windows.ps1) | Windows 核心工具自動安裝與驗證腳本 |
 | [`requirements-core.txt`](requirements-core.txt) | 已篩選的核心 Python 套件清單 |
-| [`Python範例.md`](Python範例.md) | 完整工具地圖與選用說明 |
-| [`make_pdf.py`](make_pdf.py) | 重新產生 PDF 的腳本 |
 | [`verify_core.py`](verify_core.py) | 核心套件匯入與檔案處理煙霧測試 |
 | [`skill/`](skill/) | 把上述能力打包成的 Agent 技能（`SKILL.md`＋環境腳本＋五份 recipe） |
 
@@ -24,7 +21,7 @@
 
 > 「讀這份檔案，只安裝裡面的核心工具，選用工具先不要裝。」
 
-Agent 會執行同一支 PowerShell 腳本，以 Python 3.12 建立本資料夾專用的 `.venv`、安裝 13 項核心工具並驗證。核心流程會自動安裝 Tesseract OCR、英文／方向／繁中模型，並驗證 `docx2pdf`；電腦必須已安裝有授權的 Microsoft Word。影音與進階 Office 自動化工具不會自動安裝。
+Agent 會執行同一支 PowerShell 腳本，以 Python 3.12 建立共用環境 `%LOCALAPPDATA%\file-toolkit\.venv`（與技能同一份，不建在這個 repo 裡）、安裝 13 項核心工具並驗證。核心流程會自動安裝 Tesseract OCR、英文／方向／繁中模型，並驗證 `docx2pdf`；電腦必須已安裝有授權的 Microsoft Word。影音與進階 Office 自動化工具不會自動安裝。
 
 也可以在 Windows PowerShell 直接執行：
 
@@ -32,7 +29,7 @@ Agent 會執行同一支 PowerShell 腳本，以 Python 3.12 建立本資料夾�
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\install_windows.ps1"
 ```
 
-> Claude Code、Codex App、Antigravity、OpenCode 在 Windows 原生模式都可使用。若 OpenCode 跑在 WSL，需在 WSL 另建 Linux Python 環境，不能共用 Windows `.venv`。
+> Claude Code、Codex App、Antigravity、OpenCode 在 Windows 原生模式都可使用。若 OpenCode 跑在 WSL，需在 WSL 另建 Linux Python 環境，不能共用 Windows 的 venv。
 
 ## 🤖 當成 Agent 技能使用
 

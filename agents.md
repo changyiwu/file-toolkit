@@ -19,8 +19,9 @@
 - [x] 階段五：把檔案處理能力包裝成 `skill/`（SKILL.md＋環境腳本＋五份 recipe），16 段 recipe 程式碼實測通過
 - [x] 階段六：PDF 抽文字與轉圖改用 `pypdfium2`，讓技能在開啟 Smart App Control 的電腦也能完整運作（`CORE_OK: 12/12`）
 - [x] 階段七：把 `Python範例.md`、`教學檔案處理_工具列表.md`、`AGENT_SETUP_教學檔案處理工具包.md`（連同 `make_pdf.py` 與工具列表 PDF）裡「PDF 轉圖用 PyMuPDF」的敘述同步改為 `pypdfium2`
-- [ ] 階段八：以實際教材測試 Word 批次轉 PDF／JPG，以及繁中掃描 PDF OCR
-- [ ] 階段九：只有需要特定 PDF/A 流程時才另外評估 Ghostscript
+- [x] 階段八：`install_windows.ps1` 改建共用環境 `%LOCALAPPDATA%\file-toolkit\.venv`（與技能同一份，不再建在雲端同步的 repo 內）；`Python範例.md` 與 `教學檔案處理_工具列表.md` 合併為單一清單，移除 `make_pdf.py` 與工具列表 PDF
+- [ ] 階段九：以實際教材測試 Word 批次轉 PDF／JPG，以及繁中掃描 PDF OCR
+- [ ] 階段十：只有需要特定 PDF/A 流程時才另外評估 Ghostscript
 
 ## 資料夾結構
 
@@ -31,10 +32,7 @@ file-toolkit/
 ├─ install_windows.ps1                    # Windows 核心工具安裝腳本
 ├─ requirements-core.txt                  # 核心 Python 相依套件（固定版本）
 ├─ verify_core.py                         # 核心套件匯入與檔案處理煙霧測試
-├─ 教學檔案處理_工具列表.md                 # 可讀的工具清單來源
-├─ 教學檔案處理_工具列表.pdf                # 由 make_pdf.py 產生
-├─ make_pdf.py                            # 重新產生工具列表 PDF
-├─ Python範例.md
+├─ 教學檔案處理_工具列表.md                 # 工具清單唯一來源（痛點／套件／一句話＋安裝與選裝）
 ├─ skill/                                 # 打包成 Agent 技能的原始檔（安裝名：file-toolkit）
 │  ├─ SKILL.md                            # 技能主檔：判斷任務→備環境→讀 recipe→執行驗收
 │  ├─ scripts/ensure_env.ps1              # 尋找或建立含 13 核心套件的 Python 環境
@@ -43,7 +41,7 @@ file-toolkit/
 │  └─ references/                         # word／excel／pptx／pdf／misc 五份實測 recipe
 ├─ agents.md                              # 本檔：專案藍圖
 ├─ handoff.md                             # 交接檔（每次收工必更新）
-├─ .venv/  .agents/  .gitignore
+├─ .agents/  .gitignore                    # 環境不在 repo 內，見 %LOCALAPPDATA%\file-toolkit\.venv
 ```
 
 ## 同步層級（本專案初始化至第 3 層級）
@@ -75,8 +73,11 @@ file-toolkit/
 - 保留既有 Git 歷史與 `main` 分支
 - 本專案位於雲端同步資料夾，Git 本機設定應維持 `windows.appendAtomically=false`
 - 更新 Obsidian 專案筆記時，不要修改 `02-知識庫/log.md`
-- 修改工具清單後，如需同步 PDF，使用 `make_pdf.py` 重新產生並一併驗證（`make_pdf.py` 的表格是硬寫在程式裡的，不是讀 `.md`，兩邊都要改）
+- 工具清單只有 `教學檔案處理_工具列表.md` 一份，不要再另外複製一份工具地圖或產生 PDF 版
 - PDF 抽文字與轉圖一律用 `pypdfium2`，程式碼與說明文件都不要再出現「用 PyMuPDF／`import fitz`」的敘述
+- Python 環境一律建在 `%LOCALAPPDATA%\file-toolkit\.venv`，`install_windows.ps1` 與 `skill/scripts/ensure_env.ps1` 共用同一份；不要在 repo 內建 `.venv`
+- 共用環境是既有環境就重用（3.12 以上即可），不要因為版本不是 3.12 就叫使用者刪掉——那是技能正在用的同一份
+- `skill/SKILL.md`、`references/misc.md` 寫的「核心 13 項」是 `requirements-core.txt` 的實際行數（12 必要＋選用 `PyMuPDF`），不是錯字，不要改成 12
 
 ## 安全邊界
 
@@ -90,7 +91,7 @@ file-toolkit/
 - `chi_tra.traineddata` 不能寫入 `Program Files`，改放 `%LOCALAPPDATA%\Tesseract-OCR\tessdata`（並複製 `configs`／`tessconfigs`）
 - `docx2pdf` 需桌面版 Word，且不支援 `python -m docx2pdf`
 - `.ps1` 一律只寫 ASCII：`powershell.exe`（5.1）會用 Big5 解讀無 BOM 的 UTF-8，中文註解的結尾會吃掉下一行程式碼
-- **Smart App Control（部分 Windows 11 預設開啟，如 NB-YI）**會封鎖未取得信譽的執行檔與原生 DLL：`uv.exe` 完全不能執行（改用系統 Python 的 `venv`＋`pip` 建環境）、PyMuPDF 的 `_mupdf.pyd` 永久載入失敗（`import fitz` → `No module named 'mupdf'`）。判斷指令：`(Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\CI\Policy').VerifiedAndReputablePolicyState`，`1` 為開啟。**SAC 一旦關閉就無法再開啟（需重設 Windows），不要建議使用者關掉它**
+- **Smart App Control（部分 Windows 11 預設開啟，如 NB-YI）**會封鎖**尚未取得信譽**的執行檔與原生 DLL，典型症狀是 `uv.exe` 無法執行、PyMuPDF 的 `_mupdf.pyd` 載入失敗（`import fitz` → `No module named 'mupdf'`）。**但信譽會隨版本累積，不要假設某台電腦一定不行——當場實測**（2026-08-05 於 NB-YI／SAC=1 實測：`uv 0.11.31` 可執行、`PyMuPDF 1.28.0` 可 import）。真的被擋時的備案是改用系統 Python 的 `venv`＋`pip` 建環境。判斷指令：`(Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\CI\Policy').VerifiedAndReputablePolicyState`，`1` 為開啟。**SAC 一旦關閉就無法再開啟（需重設 Windows），不要建議使用者關掉它**
 - `.venv` 綁定建立當下的 base Python 絕對路徑，放在雲端同步資料夾**不能跨電腦共用**；共用環境一律建在 `%LOCALAPPDATA%\file-toolkit\.venv`
 - `ocrmypdf` 執行時會探測選用外部程式，印出數行 `[WinError 2] 系統找不到指定的檔案。` 屬正常，不影響結果
 - 跑 OCR 前必須有 `TESSDATA_PREFIX`。`ensure_ocr.ps1` 會設在使用者層級，但**同一個 session 已開的 shell 讀不到**——要重開 shell 或當場再設一次
