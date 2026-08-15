@@ -25,9 +25,8 @@ node_modules/
 dist/
 build/
 
-# 暫存
-_preview.*
-_to_remove.txt
+# 暫存：實測產物與檢查用檔案一律以 _ 開頭，不進 repo
+_*
 *.log
 
 # 其他工作檔（誤放在此資料夾，不納入公開版本）
