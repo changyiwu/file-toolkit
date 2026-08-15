@@ -19,12 +19,21 @@
 
 ---
 
-## 🚀 Windows 核心安裝（預設只做這段）
+## 🚀 核心安裝（預設只做這段）
 
-在本 repo 根目錄執行：
+在本 repo 根目錄執行。**兩個平台的入口不同**：
 
 ```powershell
+# Windows
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\install_windows.ps1"
+```
+
+```powershell
+# macOS：install_windows.ps1 是 Windows 專屬（winget、Program Files 偵測），
+# mac 改跑這兩支跨平台腳本，再手動驗證
+pwsh -File skill/scripts/ensure_env.ps1      # 最後一行印出直譯器路徑
+pwsh -File skill/scripts/ensure_ocr.ps1      # brew 安裝 tesseract / tesseract-lang / ghostscript
+<上一步印出的直譯器路徑> verify_core.py
 ```
 
 安裝腳本會自動完成：
@@ -126,13 +135,20 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\install_windows.ps1"
 核心安裝完成回報：
 ✅ uv：已存在／已安裝
 ✅ Python：3.12.x
-✅ 環境：%LOCALAPPDATA%\file-toolkit\.venv
+✅ 環境：<共用 venv 路徑>
 ✅ 核心套件：13/13 匯入與煙霧測試成功
 ✅ Word 轉檔：Microsoft Word＋docx2pdf 可用
 ✅ OCR：Tesseract（eng／osd／chi_tra）＋OCRmyPDF 可用
 🟡 選用套件：未安裝（正確）
-下一步：請使用 %LOCALAPPDATA%\file-toolkit\.venv\Scripts\python.exe 執行本 repo 的 Python 程式
+下一步：請使用 <venv 直譯器完整路徑> 執行本 repo 的 Python 程式
 ```
+
+共用 venv 的位置與直譯器檔名兩個平台不同，照 `ensure_env.ps1` 實際印出的那一行填：
+
+| | 共用 venv | 直譯器 |
+|---|---|---|
+| Windows | `%LOCALAPPDATA%\file-toolkit\.venv` | `Scripts\python.exe` |
+| macOS | `~/.local/share/file-toolkit/.venv` | `bin/python` |
 
 若失敗，列出失敗步驟與原始錯誤摘要即可；不要自動安裝選用工具補救。
 

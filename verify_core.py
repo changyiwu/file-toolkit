@@ -32,6 +32,12 @@ OPTIONAL_MODULES = {"fitz": "PyMuPDF"}
 
 
 def find_word() -> Path | None:
+    if sys.platform == "darwin":
+        # docx2pdf 在 macOS 走 AppleScript 驅動 Word for Mac，跟 Windows 走 COM 是同一個
+        # 套件的兩條路——兩邊都要求裝桌面版 Word。.app 是資料夾，所以用 exists()。
+        mac_word = Path("/Applications/Microsoft Word.app")
+        return mac_word if mac_word.exists() else None
+
     if sys.platform != "win32":
         return None
 
@@ -59,22 +65,27 @@ def find_word() -> Path | None:
 
 def find_tesseract() -> Path | None:
     command = shutil.which("tesseract")
-    candidates = [
-        Path(command) if command else None,
-        Path(r"C:\Program Files\Tesseract-OCR\tesseract.exe"),
-        Path(r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe"),
-    ]
+    candidates = [Path(command) if command else None]
+    if sys.platform == "win32":
+        # macOS 靠 Homebrew 裝，一定在 PATH 上，不需要候選清單
+        candidates += [
+            Path(r"C:\Program Files\Tesseract-OCR\tesseract.exe"),
+            Path(r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe"),
+        ]
     return next((path for path in candidates if path and path.is_file()), None)
 
 
 def verify_external_tools() -> Path:
     word = find_word()
     if word is None:
-        raise RuntimeError("Microsoft Word is required by the core docx2pdf workflow")
+        hint = ("安裝 Word for Mac" if sys.platform == "darwin" else "安裝桌面版 Microsoft Word")
+        raise RuntimeError(f"core docx2pdf workflow 需要桌面版 Microsoft Word：{hint}")
 
     tesseract = find_tesseract()
     if tesseract is None:
-        raise RuntimeError("Tesseract OCR is required by the core OCRmyPDF workflow")
+        hint = ("brew install tesseract tesseract-lang ghostscript"
+                if sys.platform == "darwin" else "跑 skill/scripts/ensure_ocr.ps1")
+        raise RuntimeError(f"core OCRmyPDF workflow 需要 Tesseract OCR：{hint}")
 
     result = subprocess.run(
         [str(tesseract), "--list-langs"],

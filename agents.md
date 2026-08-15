@@ -71,11 +71,13 @@ file-toolkit/
 - 所有回應與文件使用繁體中文
 - 推送前先抓取並確認 `origin/main`、提交範圍及工作區狀態；**禁止 force push**
 - 保留既有 Git 歷史與 `main` 分支
-- 本專案位於雲端同步資料夾，Git 本機設定應維持 `windows.appendAtomically=false`
+- 本專案位於雲端同步資料夾，Git 本機設定應維持 `windows.appendAtomically=false`（**Windows 專屬**，macOS 不需要）
 - 更新 Obsidian 專案筆記時，不要修改 `02-知識庫/log.md`
 - 工具清單只有 `教學檔案處理_工具列表.md` 一份，不要再另外複製一份工具地圖或產生 PDF 版
 - PDF 抽文字與轉圖一律用 `pypdfium2`，程式碼與說明文件都不要再出現「用 PyMuPDF／`import fitz`」的敘述
-- Python 環境一律建在 `%LOCALAPPDATA%\file-toolkit\.venv`，`install_windows.ps1` 與 `skill/scripts/ensure_env.ps1` 共用同一份；不要在 repo 內建 `.venv`
+- Python 環境一律建在 repo 外的共用位置（Windows `%LOCALAPPDATA%\file-toolkit\.venv`、macOS `~/.local/share/file-toolkit/.venv`），`install_windows.ps1` 與 `skill/scripts/ensure_env.ps1` 共用同一份；**不要在 repo 內建 `.venv`**（repo 在雲端同步資料夾，而 venv 會寫死 base Python 的絕對路徑，換電腦就壞）
+- **`install_windows.ps1` 是 Windows 專屬**（winget、Program Files 偵測），已列入 `.platform-ok`。macOS 的環境建置走 `skill/scripts/ensure_env.ps1` ＋ `ensure_ocr.ps1`，那兩支是跨平台的；跨平台約定見 `cross-device-agent-skills/platform.md`
+- **PowerShell 一律 pwsh 7**，腳本開頭都有 `$IsWindows` 的 guard；`.ps1` 一律 UTF-8 無 BOM（舊的「ASCII-only 以免 5.1 當成 ANSI 讀」前提已不存在）
 - 共用環境是既有環境就重用（3.12 以上即可），不要因為版本不是 3.12 就叫使用者刪掉——那是技能正在用的同一份
 - `skill/SKILL.md`、`references/misc.md` 寫的「核心 13 項」是 `requirements-core.txt` 的實際行數（12 必要＋選用 `PyMuPDF`），不是錯字，不要改成 12
 

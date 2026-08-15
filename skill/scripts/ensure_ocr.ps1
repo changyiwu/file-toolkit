@@ -3,18 +3,24 @@ param()
 
 # Install and configure Tesseract OCR with the Traditional Chinese model.
 # Run this once before OCR-ing scanned PDFs.
-# Keep this file ASCII-only: Windows PowerShell 5.1 reads BOM-less UTF-8 as ANSI.
+# Requires PowerShell 7 (pwsh) on both Windows and macOS.
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+
+if ($null -eq $IsWindows) {
+    throw 'PowerShell 7 (pwsh) is required; 5.1 has no $IsWindows and would silently take the wrong branch.'
+}
 
 function Find-Tesseract {
     $command = Get-Command 'tesseract' -ErrorAction SilentlyContinue
     if ($command) { return $command.Source }
 
+    if (-not $IsWindows) { return $null }   # macOS: PATH is the only place Homebrew puts it
+
     $candidates = @(
-        (Join-Path ([Environment]::GetFolderPath('ProgramFiles')) 'Tesseract-OCR\tesseract.exe'),
-        (Join-Path ([Environment]::GetFolderPath('ProgramFilesX86')) 'Tesseract-OCR\tesseract.exe')
+        (Join-Path ([Environment]::GetFolderPath('ProgramFiles')) 'Tesseract-OCR' 'tesseract.exe'),
+        (Join-Path ([Environment]::GetFolderPath('ProgramFilesX86')) 'Tesseract-OCR' 'tesseract.exe')
     )
     foreach ($candidate in $candidates) {
         if ($candidate -and (Test-Path -LiteralPath $candidate)) { return $candidate }
@@ -22,6 +28,50 @@ function Find-Tesseract {
     return $null
 }
 
+if (-not $IsWindows) {
+    # ---- macOS ----------------------------------------------------------------
+    # Much shorter than the Windows path: Homebrew's tessdata directory is writable
+    # by the user, so none of the staging below is needed, and tesseract-lang ships
+    # chi_tra directly. ocrmypdf also needs ghostscript, which Windows handles elsewhere.
+    Write-Host '[1/2] Checking Tesseract OCR...'
+    $TesseractPath = Find-Tesseract
+    if (-not $TesseractPath) {
+        $Brew = Get-Command 'brew' -ErrorAction SilentlyContinue
+        if (-not $Brew) {
+            throw 'Tesseract OCR and Homebrew were not found. Install Homebrew from https://brew.sh and run this script again.'
+        }
+        Write-Host 'Installing tesseract, tesseract-lang and ghostscript with Homebrew...'
+        & $Brew.Source install tesseract tesseract-lang ghostscript
+        $TesseractPath = Find-Tesseract
+        if (-not $TesseractPath) {
+            throw 'Tesseract OCR was installed, but its executable was not found. Restart the Agent and run this script again.'
+        }
+    }
+    Write-Host "Tesseract OCR: $TesseractPath"
+
+    Write-Host '[2/2] Verifying the Traditional Chinese model...'
+    $Languages = & $TesseractPath --list-langs 2>&1
+    if ($Languages -notcontains 'chi_tra') {
+        $Brew = Get-Command 'brew' -ErrorAction SilentlyContinue
+        if ($Brew) {
+            Write-Host 'chi_tra missing; installing tesseract-lang...'
+            & $Brew.Source install tesseract-lang
+            $Languages = & $TesseractPath --list-langs 2>&1
+        }
+    }
+    if ($Languages -notcontains 'chi_tra') {
+        throw 'chi_tra is still missing. Install it with: brew install tesseract-lang'
+    }
+
+    if (-not (Get-Command 'gs' -ErrorAction SilentlyContinue)) {
+        Write-Host 'Warning: ghostscript not found. ocrmypdf needs it: brew install ghostscript'
+    }
+
+    Write-Host 'OCR is ready. Use lang chi_tra+eng for Traditional Chinese handouts.'
+    exit 0
+}
+
+# ---- Windows ------------------------------------------------------------------
 Write-Host '[1/3] Checking Tesseract OCR...'
 $TesseractPath = Find-Tesseract
 if (-not $TesseractPath) {
@@ -44,7 +94,7 @@ Write-Host "Tesseract OCR: $TesseractPath"
 # Models cannot be written into Program Files, so keep them under the user profile.
 Write-Host '[2/3] Configuring English, orientation, and Traditional Chinese OCR data...'
 $SourceTessData = Join-Path (Split-Path -Parent $TesseractPath) 'tessdata'
-$TessData = Join-Path $env:LOCALAPPDATA 'Tesseract-OCR\tessdata'
+$TessData = Join-Path $env:LOCALAPPDATA 'Tesseract-OCR' 'tessdata'   # platform-ok: Windows 專屬段落
 New-Item -ItemType Directory -Path $TessData -Force | Out-Null
 
 foreach ($fileName in @('eng.traineddata', 'osd.traineddata', 'pdf.ttf')) {
@@ -91,6 +141,7 @@ if ($NeedsDownload) {
 }
 
 $env:TESSDATA_PREFIX = $TessData
+# The 'User' scope only exists on Windows; .NET throws PlatformNotSupportedException elsewhere.
 [Environment]::SetEnvironmentVariable('TESSDATA_PREFIX', $TessData, 'User')
 
 Write-Host '[3/3] Verifying the Traditional Chinese model...'
