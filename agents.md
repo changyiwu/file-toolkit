@@ -84,6 +84,7 @@ file-toolkit/
 ## 安全邊界
 
 - 保留使用者既有修改；不要覆蓋原始教材或輸入檔，處理結果使用新檔名輸出
+- `README.md` 頂端與結尾的原作者（三師爸 Sense Bar）署名是 attribution，**不要自作主張刪除**；要不要拿掉屬使用者決定
 - 不提交 `.env`、憑證、權杖、密碼、`.codex/` 或 `.claude/`
 - 學生資料只使用班級代碼與座號，不儲存真實姓名；預設在本機處理
 - 初始化工作區不代表授權部署、變更公開狀態、啟用 GitHub Pages、commit 或 push
@@ -93,8 +94,8 @@ file-toolkit/
 - `chi_tra.traineddata` 不能寫入 `Program Files`，改放 `%LOCALAPPDATA%\Tesseract-OCR\tessdata`（並複製 `configs`／`tessconfigs`）
 - `docx2pdf` 需桌面版 Word，且不支援 `python -m docx2pdf`
 - `.ps1` 一律只寫 ASCII：`powershell.exe`（5.1）會用 Big5 解讀無 BOM 的 UTF-8，中文註解的結尾會吃掉下一行程式碼
-- **Smart App Control（部分 Windows 11 預設開啟，如 NB-YI）**會封鎖**尚未取得信譽**的執行檔與原生 DLL，典型症狀是 `uv.exe` 無法執行、PyMuPDF 的 `_mupdf.pyd` 載入失敗（`import fitz` → `No module named 'mupdf'`）。**但信譽會隨版本累積，不要假設某台電腦一定不行——當場實測**（2026-08-05 於 NB-YI／SAC=1 實測：`uv 0.11.31` 可執行、`PyMuPDF 1.28.0` 可 import）。真的被擋時的備案是改用系統 Python 的 `venv`＋`pip` 建環境。判斷指令：`(Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\CI\Policy').VerifiedAndReputablePolicyState`，`1` 為開啟。**SAC 一旦關閉就無法再開啟（需重設 Windows），不要建議使用者關掉它**
-- SAC 也會擋 **uv 寫進 `Scripts\` 的 45 KB 啟動器**，症狀是 `.venv\Scripts\python.exe` 一執行就回「應用程式控制原則已封鎖此檔案」，但**套件與 base Python 都是好的，壞的只有入口**。`install_windows.ps1` 與 `ensure_env.ps1` 已會自動偵測並用 base Python 的 `-m venv` 就地重建入口（保留 `site-packages`，不重裝套件）。同樣**信譽逐版累積**：2026-08-20 於 NB-YI 實測，uv 0.11.25 於 2026-08-06 建的入口被擋、當下版本新建的沒被擋
+- **Smart App Control（部分 Windows 11 預設開啟；NB-YI 與 PC-YI-SL 於 2026-08-20 皆為 `1`——PC-YI-SL 在 2026-08-05 曾記為未開啟，狀態會變，每台都要當場查）**會封鎖**尚未取得信譽**的執行檔與原生 DLL，典型症狀是 `uv.exe` 無法執行、PyMuPDF 的 `_mupdf.pyd` 載入失敗（`import fitz` → `No module named 'mupdf'`）。**但信譽會隨版本累積，不要假設某台電腦一定不行——當場實測**（2026-08-05 於 NB-YI／SAC=1 實測：`uv 0.11.31` 可執行、`PyMuPDF 1.28.0` 可 import）。真的被擋時的備案是改用系統 Python 的 `venv`＋`pip` 建環境。判斷指令：`(Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\CI\Policy').VerifiedAndReputablePolicyState`，`1` 為開啟。**SAC 一旦關閉就無法再開啟（需重設 Windows），不要建議使用者關掉它**
+- SAC 也會擋 **uv 寫進 `Scripts\` 的 45 KB 啟動器**，症狀是 `.venv\Scripts\python.exe` 一執行就回「應用程式控制原則已封鎖此檔案」，但**套件與 base Python 都是好的，壞的只有入口**。`install_windows.ps1` 與 `ensure_env.ps1` 已會自動偵測並用 base Python 的 `-m venv` 就地重建入口（保留 `site-packages`，不重裝套件）。同樣**信譽逐版累積**：2026-08-20 於 PC-YI-SL 實測，uv 0.11.25 於 2026-08-06 建的入口被擋、當下版本新建的沒被擋
 - `.venv` 綁定建立當下的 base Python 絕對路徑，放在雲端同步資料夾**不能跨電腦共用**；共用環境一律建在 `%LOCALAPPDATA%\file-toolkit\.venv`
 - `ocrmypdf` 執行時會探測選用外部程式，印出數行 `[WinError 2] 系統找不到指定的檔案。` 屬正常，不影響結果
 - 跑 OCR 前必須有 `TESSDATA_PREFIX`。`ensure_ocr.ps1` 會設在使用者層級，但**同一個 session 已開的 shell 讀不到**——要重開 shell 或當場再設一次
