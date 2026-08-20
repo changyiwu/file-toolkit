@@ -36,14 +36,74 @@ if (-not (Test-Path -LiteralPath $RequirementsPath)) {
     throw "Missing requirements file: $RequirementsPath"
 }
 
-function Test-CoreEnv {
+function Test-PythonRuns {
     param([string]$PythonPath)
 
     if (-not $PythonPath -or -not (Test-Path -LiteralPath $PythonPath)) {
         return $false
     }
+
+    try {
+        & $PythonPath -c 'pass' 2>$null | Out-Null
+        return ($LASTEXITCODE -eq 0)
+    }
+    catch {
+        # Smart App Control blocks the launcher outright, so PowerShell throws instead of
+        # returning an exit code. Treat that the same as "this interpreter cannot run".
+        return $false
+    }
+}
+
+function Test-CoreEnv {
+    param([string]$PythonPath)
+
+    if (-not (Test-PythonRuns -PythonPath $PythonPath)) {
+        return $false
+    }
     & $PythonPath -c $ImportCheck 2>$null | Out-Null
     return ($LASTEXITCODE -eq 0)
+}
+
+function Repair-VenvLauncher {
+    # Windows only. Smart App Control blocks executables that have no established reputation,
+    # and the small launcher uv writes into Scripts\ is one of them: the packages are fine, only
+    # the entry point is unusable. Rebuilding with the base Python's own venv module drops a
+    # signed python.exe in its place and leaves Lib\site-packages untouched, so the core
+    # packages are kept rather than reinstalled.
+    param([string]$VenvPath, [string]$PythonPath)
+
+    $ConfigPath = Join-Path $VenvPath 'pyvenv.cfg'
+    if (-not (Test-Path -LiteralPath $ConfigPath)) {
+        return $false
+    }
+
+    # 'home' is the base Python folder; 'executable' is the interpreter itself. uv writes only
+    # 'home', and the 'executable' path it would write can point at a version-pinned folder name
+    # that no longer exists, so try 'home' first and require both existence and a working run.
+    $HomeCandidates = @()
+    $ExecutableCandidates = @()
+    foreach ($line in (Get-Content -LiteralPath $ConfigPath)) {
+        if ($line -match '^\s*home\s*=\s*(.+?)\s*$') {
+            $HomeCandidates += (Join-Path $Matches[1] 'python.exe')   # platform-ok: Windows 專屬修復
+        }
+        elseif ($line -match '^\s*executable\s*=\s*(.+?)\s*$') {
+            $ExecutableCandidates += $Matches[1]
+        }
+    }
+
+    foreach ($candidate in ($HomeCandidates + $ExecutableCandidates)) {
+        if (-not (Test-PythonRuns -PythonPath $candidate)) {
+            continue
+        }
+        Write-Host 'The environment launcher cannot run (Smart App Control). Rebuilding it with the base Python...'
+        & $candidate -m venv $VenvPath
+        if ($LASTEXITCODE -eq 0 -and (Test-PythonRuns -PythonPath $PythonPath)) {
+            Write-Host 'Launcher rebuilt; the installed packages were kept.'
+            return $true
+        }
+    }
+
+    return $false
 }
 
 function Find-Uv {
@@ -66,6 +126,13 @@ function Find-Uv {
         if (Test-Path -LiteralPath $candidate) { return $candidate }
     }
     return $null
+}
+
+# A shared environment whose launcher is blocked still holds every core package. Repair the
+# entry point before the reuse check, or a healthy environment would be judged broken and
+# rebuilt from scratch.
+if ($IsWindows -and (Test-Path -LiteralPath $SharedPython) -and -not (Test-PythonRuns -PythonPath $SharedPython)) {
+    Repair-VenvLauncher -VenvPath $SharedVenv -PythonPath $SharedPython | Out-Null
 }
 
 # Step 1: reuse an existing environment if one already has the core packages.
@@ -112,6 +179,13 @@ if (-not (Test-Path -LiteralPath $SharedPython)) {
     & $UvPath venv --python 3.12 $SharedVenv --quiet
     if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $SharedPython)) {
         throw "Failed to create the shared environment at $SharedVenv."
+    }
+}
+
+# uv pip install runs this interpreter, so the launcher has to work before the next step.
+if ($IsWindows -and -not (Test-PythonRuns -PythonPath $SharedPython)) {
+    if (-not (Repair-VenvLauncher -VenvPath $SharedVenv -PythonPath $SharedPython)) {
+        throw "The interpreter at $SharedPython cannot run, most likely blocked by Smart App Control, and rebuilding its launcher failed. Delete $SharedVenv and run this script again."
     }
 }
 

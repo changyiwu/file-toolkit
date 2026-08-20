@@ -16,6 +16,75 @@ $RequirementsPath = Join-Path $RepoRoot 'requirements-core.txt'
 $VerifyPath = Join-Path $RepoRoot 'verify_core.py'
 $PythonPath = Join-Path $VenvPath 'Scripts\python.exe'
 
+function Test-PythonRuns {
+    param([string]$PythonPath)
+
+    if (-not $PythonPath -or -not (Test-Path -LiteralPath $PythonPath)) {
+        return $false
+    }
+
+    try {
+        & $PythonPath -c 'pass' 2>$null | Out-Null
+        return ($LASTEXITCODE -eq 0)
+    }
+    catch {
+        # Smart App Control blocks the launcher outright, so PowerShell throws instead of
+        # returning an exit code. Treat that the same as "this interpreter cannot run".
+        return $false
+    }
+}
+
+function Get-VenvBasePython {
+    param([string]$VenvPath)
+
+    # 'home' is the base Python folder; 'executable' is the interpreter itself. uv writes only
+    # 'home', and the 'executable' path it would write can point at a version-pinned folder name
+    # that no longer exists, so try 'home' first and require both existence and a working run.
+    $ConfigPath = Join-Path $VenvPath 'pyvenv.cfg'
+    if (-not (Test-Path -LiteralPath $ConfigPath)) {
+        return $null
+    }
+
+    $HomeCandidates = @()
+    $ExecutableCandidates = @()
+    foreach ($line in (Get-Content -LiteralPath $ConfigPath)) {
+        if ($line -match '^\s*home\s*=\s*(.+?)\s*$') {
+            $HomeCandidates += (Join-Path $Matches[1] 'python.exe')
+        }
+        elseif ($line -match '^\s*executable\s*=\s*(.+?)\s*$') {
+            $ExecutableCandidates += $Matches[1]
+        }
+    }
+
+    foreach ($candidate in ($HomeCandidates + $ExecutableCandidates)) {
+        if (Test-PythonRuns -PythonPath $candidate) {
+            return $candidate
+        }
+    }
+
+    return $null
+}
+
+function Repair-VenvLauncher {
+    param([string]$VenvPath, [string]$PythonPath)
+
+    # Smart App Control blocks executables that have no established reputation, and the small
+    # launcher uv writes into Scripts\ is one of them: the packages are fine, only the entry
+    # point is unusable. Rebuilding with the base Python's own venv module drops a signed
+    # python.exe in its place and leaves Lib\site-packages untouched, so nothing is reinstalled.
+    $BasePython = Get-VenvBasePython -VenvPath $VenvPath
+    if (-not $BasePython) {
+        throw "The interpreter at $PythonPath cannot run, most likely blocked by Smart App Control, and no working base Python was found in $VenvPath\pyvenv.cfg. Delete $VenvPath and run this script again."
+    }
+
+    Write-Host 'The environment launcher cannot run (Smart App Control). Rebuilding it with the base Python...'
+    & $BasePython -m venv $VenvPath
+    if ($LASTEXITCODE -ne 0 -or -not (Test-PythonRuns -PythonPath $PythonPath)) {
+        throw "Failed to rebuild the launcher at $PythonPath. Delete $VenvPath and run this script again."
+    }
+    Write-Host 'Launcher rebuilt; the installed packages were kept.'
+}
+
 function Find-Uv {
     $command = Get-Command 'uv' -ErrorAction SilentlyContinue
     if ($command) {
@@ -123,6 +192,12 @@ if (-not $UvPath) {
 Write-Host "uv: $UvPath"
 Write-Host "[2/6] Preparing the shared Python environment at $VenvPath ..."
 if (Test-Path -LiteralPath $PythonPath) {
+    # Repair before the version check: a launcher blocked by Smart App Control would otherwise
+    # abort the script with an unreadable OS error on an environment that is perfectly healthy.
+    if (-not (Test-PythonRuns -PythonPath $PythonPath)) {
+        Repair-VenvLauncher -VenvPath $VenvPath -PythonPath $PythonPath
+    }
+
     # Reuse anything 3.12 or newer. This environment is shared with the skill, so an exact
     # 3.12 requirement would reject a working newer one and tell the user to delete it.
     $ExistingVersion = & $PythonPath -c "import platform; print(platform.python_version())"
@@ -136,6 +211,9 @@ else {
     & $UvPath venv --python 3.12 $VenvPath --quiet
     if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $PythonPath)) {
         throw "Failed to create the shared environment at $VenvPath."
+    }
+    if (-not (Test-PythonRuns -PythonPath $PythonPath)) {
+        Repair-VenvLauncher -VenvPath $VenvPath -PythonPath $PythonPath
     }
 }
 
