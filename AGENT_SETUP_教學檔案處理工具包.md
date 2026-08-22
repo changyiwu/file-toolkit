@@ -154,4 +154,4 @@ pwsh -File skill/scripts/ensure_ocr.ps1      # brew 安裝 tesseract / tesseract
 
 ---
 
-> 來源：三師爸 Sense Bar｜file-toolkit｜youtube.com/@sensebar
+> 來源：file-toolkit

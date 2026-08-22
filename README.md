@@ -1,7 +1,5 @@
 # file-toolkit｜老師的教學檔案處理工具包
 
-> 三師爸 Sense Bar ・ [youtube.com/@sensebar](https://www.youtube.com/@sensebar)
-
 `file-toolkit` 是一套給教學現場老師使用的檔案處理工具包，涵蓋 Word、Excel、PowerPoint、PDF、圖片、圖表、QR Code 與教材轉 Markdown。
 
 ## 📦 這個資料夾有什麼
@@ -62,4 +60,5 @@ pwsh -File skill/scripts/ensure_ocr.ps1
 
 ---
 
-> 歡迎自由下載、分享、改作。製作：三師爸 Sense Bar
+> 歡迎自由下載、分享、改作。
+> 原始內容出自原作者三師爸，本專案為修改版本。
