@@ -25,7 +25,7 @@
 
 ```powershell
 # Windows
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\install_windows.ps1"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "./install_windows.ps1"
 ```
 
 ```powershell

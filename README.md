@@ -32,7 +32,7 @@ Agent 會以 Python 3.12 建立共用環境（與技能同一份，不建在這�
 
 ```powershell
 # Windows
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\install_windows.ps1"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "./install_windows.ps1"
 ```
 
 ```powershell

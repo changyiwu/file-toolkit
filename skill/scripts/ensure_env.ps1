@@ -68,7 +68,7 @@ function Repair-VenvLauncher {
     # Windows only. Smart App Control blocks executables that have no established reputation,
     # and the small launcher uv writes into Scripts\ is one of them: the packages are fine, only
     # the entry point is unusable. Rebuilding with the base Python's own venv module drops a
-    # signed python.exe in its place and leaves Lib\site-packages untouched, so the core
+    # signed python.exe in its place and leaves Lib/site-packages untouched, so the core
     # packages are kept rather than reinstalled.
     param([string]$VenvPath, [string]$PythonPath)
 

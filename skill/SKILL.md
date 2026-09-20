@@ -42,13 +42,13 @@ description: |
 本技能的所有處理都跑在固定版本的核心環境上（13 個核心套件）。執行：
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "<本技能目錄>\scripts\ensure_env.ps1"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "<本技能目錄>/scripts/ensure_env.ps1"
 ```
 
 腳本會依序尋找可用環境，找不到就用 `uv` 自動建立共用環境並安裝核心套件，**最後一行印出 Python 直譯器完整路徑**。後續所有腳本都用這個直譯器執行，不要用系統 `python`：
 
 ```powershell
-& "<上一步印出的路徑>" ".\_work\do_task.py"
+& "<上一步印出的路徑>" "./_work/do_task.py"
 ```
 
 尋找順序：`FILE_TOOLKIT_PYTHON` 環境變數 → 目前專案的 `.\.venv` → 共用環境 `%LOCALAPPDATA%\file-toolkit\.venv`。
@@ -56,7 +56,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File "<本技能目錄>\scrip
 **OCR 任務（掃描 PDF 轉可搜尋文字）額外執行一次**，它會裝好 Tesseract 與繁體中文模型：
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "<本技能目錄>\scripts\ensure_ocr.ps1"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "<本技能目錄>/scripts/ensure_ocr.ps1"
 ```
 
 ---
