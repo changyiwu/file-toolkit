@@ -175,8 +175,15 @@ if (-not $UvPath) {
     }
 }
 
+# Windows on ARM: use x64 Python under Prism emulation. Natively, PyMuPDF 1.28.0, cryptography
+# (pulled in by pdfminer.six), pi-heif and uharfbuzz have no win_arm64 wheels and fail to build.
+# Check the OS architecture, not the process: x64 pwsh under emulation reports X64.
+$IsWindowsArm = $IsWindows -and
+    [Runtime.InteropServices.RuntimeInformation]::OSArchitecture -eq [Runtime.InteropServices.Architecture]::Arm64
+$PythonRequest = if ($IsWindowsArm) { 'cpython-3.12-windows-x86_64-none' } else { '3.12' }
+
 if (-not (Test-Path -LiteralPath $SharedPython)) {
-    & $UvPath venv --python 3.12 $SharedVenv --quiet
+    & $UvPath venv --python $PythonRequest $SharedVenv --quiet
     if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $SharedPython)) {
         throw "Failed to create the shared environment at $SharedVenv."
     }

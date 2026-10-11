@@ -76,6 +76,7 @@ file-toolkit/
 - 工具清單只有 `教學檔案處理_工具列表.md` 一份，不要再另外複製一份工具地圖或產生 PDF 版
 - PDF 抽文字與轉圖一律用 `pypdfium2`，程式碼與說明文件都不要再出現「用 PyMuPDF／`import fitz`」的敘述
 - Python 環境一律建在 repo 外的共用位置（Windows `%LOCALAPPDATA%\file-toolkit\.venv`、macOS `~/.local/share/file-toolkit/.venv`），`install_windows.ps1` 與 `skill/scripts/ensure_env.ps1` 共用同一份；**不要在 repo 內建 `.venv`**（repo 在雲端同步資料夾，而 venv 會寫死 base Python 的絕對路徑，換電腦就壞）
+- **Windows on ARM（RTX Spark、Snapdragon）的共用環境一律建成 x64 Python**（`cpython-3.12-windows-x86_64-none`，靠 Prism 模擬）。原生 ARM64 裝不起核心套件：PyMuPDF 1.28.0、`cryptography`（`pdfminer.six` 拉進來的）、`pi-heif`、`uharfbuzz` 都沒有 win_arm64 wheel。`ensure_env.ps1` 與 `install_windows.ps1` 都已照此處理，兩支要一起改
 - **`install_windows.ps1` 是 Windows 專屬**（winget、Program Files 偵測），已列入 `.platform-ok`。macOS 的環境建置走 `skill/scripts/ensure_env.ps1` ＋ `ensure_ocr.ps1`，那兩支是跨平台的；跨平台約定見 `cross-device-agent-skills/platform.md`
 - **PowerShell 一律 pwsh 7**，腳本開頭都有 `$IsWindows` 的 guard；`.ps1` 一律 UTF-8 無 BOM（舊的「ASCII-only 以免 5.1 當成 ANSI 讀」前提已不存在）
 - 共用環境是既有環境就重用（3.12 以上即可），不要因為版本不是 3.12 就叫使用者刪掉——那是技能正在用的同一份

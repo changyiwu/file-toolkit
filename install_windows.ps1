@@ -208,7 +208,11 @@ if (Test-Path -LiteralPath $PythonPath) {
     Write-Host "Reusing the existing shared environment (Python $ExistingVersion)."
 }
 else {
-    & $UvPath venv --python 3.12 $VenvPath --quiet
+    # Windows on ARM: x64 Python under Prism emulation; several core dependencies have no
+    # win_arm64 wheels (same rule as skill/scripts/ensure_env.ps1). Check the OS, not the process.
+    $IsWindowsArm = [Runtime.InteropServices.RuntimeInformation]::OSArchitecture -eq [Runtime.InteropServices.Architecture]::Arm64
+    $PythonRequest = if ($IsWindowsArm) { 'cpython-3.12-windows-x86_64-none' } else { '3.12' }
+    & $UvPath venv --python $PythonRequest $VenvPath --quiet
     if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $PythonPath)) {
         throw "Failed to create the shared environment at $VenvPath."
     }
