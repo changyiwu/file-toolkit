@@ -39,11 +39,13 @@ description: |
 
 ## 1. 準備 Python 環境（每次都要先做）
 
-本技能的所有處理都跑在固定版本的核心環境上（13 個核心套件）。執行：
+本技能的所有處理都跑在固定版本的核心環境上（12 個核心套件）。執行：
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "<本技能目錄>/scripts/ensure_env.ps1"
+pwsh -NoProfile -ExecutionPolicy Bypass -File "<本技能目錄>/scripts/ensure_env.ps1"
 ```
+
+一定要用 PowerShell 7 的 `pwsh`，**不要用 `powershell.exe`**（5.1）：5.1 會把腳本裡的中文讀成亂碼，直接解析失敗。
 
 腳本會依序尋找可用環境，找不到就用 `uv` 自動建立共用環境並安裝核心套件，**最後一行印出 Python 直譯器完整路徑**。後續所有腳本都用這個直譯器執行，不要用系統 `python`：
 
@@ -56,7 +58,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File "<本技能目錄>/scrip
 **OCR 任務（掃描 PDF 轉可搜尋文字）額外執行一次**，它會裝好 Tesseract 與繁體中文模型：
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "<本技能目錄>/scripts/ensure_ocr.ps1"
+pwsh -NoProfile -ExecutionPolicy Bypass -File "<本技能目錄>/scripts/ensure_ocr.ps1"
 ```
 
 ---
@@ -100,13 +102,21 @@ recipe 裡的寫法都是實測過的版本，**遇到同名任務直接沿用�
 
 ## 選裝套件
 
-核心 13 項以外的套件（`pandas`、`docxcompose`、`xlsxwriter`、`edge-tts`、`yt-dlp`、`youtube-transcript-api`、`pdfplumber`）**預設不裝**。真的需要時先跟使用者說明用途，同意後單獨安裝一項：
+以下三個套件**不必另外安裝**，核心套件會順便裝進共用環境，可以直接 `import`：
+
+| 套件 | 由誰帶進來 | 適合用在 |
+|------|-----------|---------|
+| `pandas` | `markitdown[xlsx]` | 大量資料的樞紐分析；一般成績計算仍以 `openpyxl` 為主（recipe 都是 openpyxl 寫法） |
+| `pdfplumber` | `markitdown[pdf]` | 精準擷取 PDF 表格 |
+| `xlsxwriter` | `python-pptx` | 只寫不讀的大型 Excel 輸出 |
+
+其他套件（`docxcompose`、`edge-tts`、`yt-dlp`、`youtube-transcript-api`）**預設不裝**。真的需要時先跟使用者說明用途，同意後單獨安裝一項：
 
 ```powershell
-uv pip install --python "<Python 路徑>" pandas
+uv pip install --python "<Python 路徑>" docxcompose
 ```
 
-一般成績分析用核心的 `openpyxl` + `matplotlib` 就夠，不要為了方便就裝 `pandas`。
+**不要裝 `PyMuPDF`**：已於 2026-10 移出核心，抽文字與轉圖一律用 `pypdfium2`（理由見 `references/pdf.md`）。
 
 ---
 

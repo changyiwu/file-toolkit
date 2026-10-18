@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -26,9 +27,17 @@ MODULES = {
     "pypdfium2": "pypdfium2",
 }
 
-# PyMuPDF 仍在 requirements-core.txt 裡，但不列為必要：開了 Smart App Control 的 Windows
-# 會封鎖它的原生 DLL `_mupdf.pyd`。recipe 的抽文字與轉圖一律改用 pypdfium2。
-OPTIONAL_MODULES = {"fitz": "PyMuPDF"}
+# 繁中 OCR 測試頁的內容：中英混排，方向信心才穩定高於 recipe 的門檻 5（純中文約 6，太貼近門檻）
+CJK_OCR_LINES = [
+    "教學檔案處理工具包", "掃描講義轉成可搜尋文字", "這一頁是上下顛倒的測試", "老師批次處理文件更輕鬆",
+    "Grade 7 Math Quiz 2026", "第一次評量 1-1 至 1-4", "Name ______ No. 12", "考試時間 45 分鐘 Score 100",
+]
+CJK_FONT_CANDIDATES = [
+    Path(r"C:\Windows\Fonts\msjh.ttc"),              # 微軟正黑體
+    Path(r"C:\Windows\Fonts\mingliu.ttc"),           # 細明體
+    Path("/System/Library/Fonts/PingFang.ttc"),
+    Path("/System/Library/Fonts/STHeiti Medium.ttc"),
+]
 
 
 def find_word() -> Path | None:
@@ -204,6 +213,52 @@ def run_smoke_tests() -> None:
             ocr_document.close()
         assert "OCR" in ocr_text and "123" in ocr_text, "OCRmyPDF text smoke test failed"
 
+        verify_cjk_upside_down_ocr(root)
+
+
+def verify_cjk_upside_down_ocr(root: Path) -> None:
+    """繁中掃描頁上下顛倒：用 references/pdf.md D3 的參數，確認會自動轉正且辨識得到中文。"""
+    import ocrmypdf
+    import pypdfium2
+    from PIL import Image, ImageDraw, ImageFont
+
+    font_path = next((path for path in CJK_FONT_CANDIDATES if path.is_file()), None)
+    if font_path is None:
+        raise RuntimeError("找不到中文字型，無法產生繁中 OCR 測試頁：" + "、".join(map(str, CJK_FONT_CANDIDATES)))
+
+    page = Image.new("RGB", (1654, 2339), "white")      # A4 @ 200 dpi，跟一般影印機掃描相同
+    draw = ImageDraw.Draw(page)
+    font = ImageFont.truetype(str(font_path), 48)
+    for index, line in enumerate(CJK_OCR_LINES * 2):
+        draw.text((150, 200 + index * 86), line, fill="black", font=font)
+    source = root / "sample-cjk-upside-down.pdf"
+    page.rotate(180).save(source, "PDF", resolution=200.0)
+
+    target = root / "sample-cjk-ocr.pdf"
+    ocrmypdf.ocr(
+        source,
+        target,
+        language=["chi_tra", "eng"],
+        output_type="pdf",
+        optimize=0,
+        skip_text=True,
+        progress_bar=False,
+        deskew=True,
+        rotate_pages=True,
+        rotate_pages_threshold=5.0,
+    )
+    document = pypdfium2.PdfDocument(target)
+    try:
+        text = "".join("".join(p.get_textpage().get_text_range() for p in document).split())
+    finally:
+        document.close()
+
+    expected = set(re.findall(r"[一-鿿]", "".join(CJK_OCR_LINES)))
+    coverage = len(expected & set(text)) / len(expected)
+    assert coverage >= 0.8 and "教學檔案處理" in text, (
+        f"繁中顛倒頁 OCR 失敗（中文涵蓋 {coverage:.0%}）：確認 chi_tra／osd 模型，以及 rotate_pages 參數"
+    )
+
 
 def main() -> int:
     failures: list[tuple[str, str]] = []
@@ -228,12 +283,6 @@ def main() -> int:
 
     version = '.'.join(str(part) for part in sys.version_info[:3])
     print(f"CORE_OK: {len(MODULES)}/{len(MODULES)} imports and file smoke tests (Python {version})")
-    for module_name, package_name in OPTIONAL_MODULES.items():
-        try:
-            importlib.import_module(module_name)
-            print(f"OPTIONAL_OK: {package_name}")
-        except Exception as exc:
-            print(f"OPTIONAL_UNAVAILABLE: {package_name}: {type(exc).__name__}: {exc}")
     return 0
 
 

@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param()
 
-# Find or create a Python environment with the 13 core packages.
+# Find or create a Python environment with the 12 core packages.
 # The last line printed is the interpreter path.
 # Requires PowerShell 7 (pwsh) on both Windows and macOS.
 Set-StrictMode -Version Latest
@@ -28,8 +28,6 @@ if ($IsWindows) {
     $LocalPython = Join-Path (Get-Location).Path '.venv' 'bin' 'python'
 }
 
-# PyMuPDF (fitz) is installed but deliberately not required here: on Windows, Smart App Control
-# blocks its native _mupdf.pyd. The recipes use pypdfium2 for rendering and text extraction.
 $ImportCheck = 'import docx, openpyxl, pptx, pypdf, reportlab, PIL, matplotlib, qrcode, markitdown, docx2pdf, ocrmypdf, pypdfium2'
 
 if (-not (Test-Path -LiteralPath $RequirementsPath)) {
@@ -175,8 +173,8 @@ if (-not $UvPath) {
     }
 }
 
-# Windows on ARM: use x64 Python under Prism emulation. Natively, PyMuPDF 1.28.0, cryptography
-# (pulled in by pdfminer.six), pi-heif and uharfbuzz have no win_arm64 wheels and fail to build.
+# Windows on ARM: use x64 Python under Prism emulation. Natively, cryptography (pulled in by
+# pdfminer.six), pi-heif and uharfbuzz have no win_arm64 wheels and fail to build.
 # Check the OS architecture, not the process: x64 pwsh under emulation reports X64.
 $IsWindowsArm = $IsWindows -and
     [Runtime.InteropServices.RuntimeInformation]::OSArchitecture -eq [Runtime.InteropServices.Architecture]::Arm64
@@ -196,7 +194,7 @@ if ($IsWindows -and -not (Test-PythonRuns -PythonPath $SharedPython)) {
     }
 }
 
-Write-Host 'Installing 13 core packages (media tools and advanced Office automation are excluded)...'
+Write-Host 'Installing 12 core packages (media tools and advanced Office automation are excluded)...'
 & $UvPath pip install --python $SharedPython --requirements $RequirementsPath --quiet --no-progress
 if ($LASTEXITCODE -ne 0) {
     throw 'Core package installation failed. Keep the original error above; do not install every optional package as a workaround.'

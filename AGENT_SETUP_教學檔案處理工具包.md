@@ -21,11 +21,14 @@
 
 ## 🚀 核心安裝（預設只做這段）
 
-在本 repo 根目錄執行。**兩個平台的入口不同**：
+在本 repo 根目錄執行。所有腳本都要用 PowerShell 7 的 `pwsh`，**不要用 Windows 內建的 `powershell.exe`（5.1）**——
+5.1 會把腳本裡的中文讀成亂碼而解析失敗。電腦沒有 `pwsh` 時先裝：`winget install Microsoft.PowerShell`。
+
+**兩個平台的入口不同**：
 
 ```powershell
 # Windows
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "./install_windows.ps1"
+pwsh -NoProfile -ExecutionPolicy Bypass -File "./install_windows.ps1"
 ```
 
 ```powershell
@@ -36,14 +39,13 @@ pwsh -File skill/scripts/ensure_ocr.ps1      # brew 安裝 tesseract / tesseract
 <上一步印出的直譯器路徑> verify_core.py
 ```
 
-安裝腳本會自動完成：
+`install_windows.ps1` 本身不重做安裝邏輯，而是依序呼叫技能的兩支跨平台腳本，再驗證：
 
-1. 找到 `uv`；若沒有，透過 WinGet 安裝官方 `astral-sh.uv`。
-2. 以 Python 3.12 建立共用環境 `%LOCALAPPDATA%\file-toolkit\.venv`（與 `skill/scripts/ensure_env.ps1` 同一份）；本機沒有 3.12 時由 `uv` 下載。
-3. 依 [`requirements-core.txt`](requirements-core.txt) 一次安裝 13 項套件（12 項必要＋選用的 `PyMuPDF`）。
-4. 確認 Microsoft Word；若未安裝，清楚回報 `docx2pdf` 的必要前置，不自動安裝 Office。
-5. 找到 Tesseract；若沒有，透過 WinGet 安裝官方套件，並設定英文、方向與繁中 `chi_tra` 模型。
-6. 執行 [`verify_core.py`](verify_core.py)，驗證套件匯入、Word 轉 PDF 與 OCR 工作流程；通過標準是 `CORE_OK: 12/12`。
+1. `skill/scripts/ensure_env.ps1`：找到 `uv`（沒有就透過 WinGet 安裝官方 `astral-sh.uv`），以 Python 3.12 建立共用環境 `%LOCALAPPDATA%\file-toolkit\.venv`（本機沒有 3.12 時由 `uv` 下載），安裝 [`skill/scripts/requirements-core.txt`](skill/scripts/requirements-core.txt) 的 12 項核心套件。
+2. 環境已存在時，再用 `uv` 依同一份清單同步一次，確保版本與清單一致。
+3. 確認 Microsoft Word；若未安裝，清楚回報 `docx2pdf` 的必要前置，不自動安裝 Office。
+4. `skill/scripts/ensure_ocr.ps1`：找到 Tesseract（沒有就透過 WinGet 安裝官方套件），並設定英文、方向與繁中 `chi_tra` 模型。
+5. 執行 [`verify_core.py`](verify_core.py)，驗證套件匯入、Word 轉 PDF、英文 OCR 與繁中顛倒頁 OCR；通過標準是 `CORE_OK: 12/12`。
 
 > 安裝期間若 Antigravity、Claude Code、Codex 或 OpenCode 顯示執行指令／安裝程式的權限確認，
 > 請讓使用者看清楚目標是 `%LOCALAPPDATA%\file-toolkit\.venv`、官方 `astral-sh.uv`、`UB-Mannheim.TesseractOCR`
@@ -73,12 +75,13 @@ pwsh -File skill/scripts/ensure_ocr.ps1      # brew 安裝 tesseract / tesseract
 > 重要修正：只裝裸的 `markitdown` 不會啟用所有文件格式。
 > 本工具包改裝 `pdf,docx,pptx,xlsx` 四組官方 extras，才符合影片示範用途。
 
-> ⚠️ **PDF 抽文字與轉圖一律用 `pypdfium2`，不要用 `PyMuPDF`（`import fitz`）。**
-> `requirements-core.txt` 裡仍有第 13 項 `PyMuPDF`，但它是**選用**的：部分 Windows 11 預設開啟
-> Smart App Control，會永久封鎖它的原生 DLL `_mupdf.pyd`（`import fitz` → `No module named 'mupdf'`），
-> 而 `pypdfium2` 不受影響。因此**驗證通過的標準是 `CORE_OK: 12/12`**；
-> `OPTIONAL_UNAVAILABLE: PyMuPDF` 屬正常，不需要排除，也不要建議使用者關閉 Smart App Control
-> （它一旦關閉就無法再開啟，必須重設 Windows）。
+> 這 12 項還會順便帶進 `pandas`（`markitdown[xlsx]`）、`pdfplumber`（`markitdown[pdf]`）、`xlsxwriter`（`python-pptx`），
+> 三者都**不必另外安裝**。
+
+> ⚠️ **PDF 抽文字與轉圖一律用 `pypdfium2`，不要另外裝 `PyMuPDF`（`import fitz`）。**
+> 部分 Windows 11 預設開啟 Smart App Control，會永久封鎖它的原生 DLL `_mupdf.pyd`
+> （`import fitz` → `No module named 'mupdf'`），而 `pypdfium2` 不受影響，所以 PyMuPDF 已移出核心清單。
+> 也不要建議使用者關閉 Smart App Control（它一旦關閉就無法再開啟，必須重設 Windows）。
 
 ---
 
@@ -87,10 +90,7 @@ pwsh -File skill/scripts/ensure_ocr.ps1      # brew 安裝 tesseract / tesseract
 | 套件 | 為什麼不是核心 |
 |------|----------------|
 | `docxcompose` | 只有「合併多份 Word」才需要。 |
-| `xlsxwriter` | 常見 Excel 產生與格式化可先用 `openpyxl` 完成。 |
-| `pandas` | 適合大量資料分析；一般讀寫成績表不必先裝。 |
 | `PyMuPDF` | 抽文字與轉圖已由 `pypdfium2` 負責；部分 Windows 11 的 Smart App Control 會封鎖它的原生 DLL。 |
-| `pdfplumber` | 適合精準擷取 PDF 表格；基本抽字先用 `pypdfium2`／MarkItDown。 |
 | `pdf2image` | 需另裝 Poppler；PDF 轉圖可先用 `pypdfium2`。 |
 | `pywin32` | `docx2pdf` 會自動帶入；只有直接撰寫 Office COM 自動化時才需另外操作。 |
 | `edge-tts` | 只有文字轉語音時需要，且會連線到雲端服務。 |
@@ -120,7 +120,7 @@ pwsh -File skill/scripts/ensure_ocr.ps1      # brew 安裝 tesseract / tesseract
 | Agent | 核心安裝 | 需注意 |
 |-------|----------|--------|
 | ChatGPT 的 Codex App | ✅ | 必須開啟本機 repo／工作區；一般 ChatGPT 對話本身不會替主機安裝套件。 |
-| Claude Code | ✅ | Windows 原生可用 PowerShell；若目前使用 Git Bash，仍請執行上方完整 `powershell.exe` 指令。 |
+| Claude Code | ✅ | Windows 原生可用 PowerShell；若目前使用 Git Bash，仍請執行上方完整的 `pwsh` 指令。 |
 | Google Antigravity | ✅ | 預設權限模式會要求使用者核准安裝；若在沙盒模式，套件只會留在沙盒，不會安裝到 Windows 的共用環境。 |
 | OpenCode | ✅（Windows 原生） | 若 OpenCode 跑在 WSL，WSL 與 Windows 的 Python 環境分開，不能共用 Windows 的 venv，需在 WSL 另建環境。 |
 
@@ -136,7 +136,7 @@ pwsh -File skill/scripts/ensure_ocr.ps1      # brew 安裝 tesseract / tesseract
 ✅ uv：已存在／已安裝
 ✅ Python：3.12.x
 ✅ 環境：<共用 venv 路徑>
-✅ 核心套件：13/13 匯入與煙霧測試成功
+✅ 核心套件：CORE_OK 12/12 匯入與煙霧測試成功
 ✅ Word 轉檔：Microsoft Word＋docx2pdf 可用
 ✅ OCR：Tesseract（eng／osd／chi_tra）＋OCRmyPDF 可用
 🟡 選用套件：未安裝（正確）

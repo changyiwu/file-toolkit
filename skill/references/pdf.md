@@ -2,9 +2,9 @@
 
 套件：`pypdf`（合併拆分）、`pypdfium2`（抽文字與轉圖）、`reportlab`（生成頁面）、`ocrmypdf`＋Tesseract（OCR）
 
-> 抽文字與轉圖一律用 `pypdfium2`，**不要用 PyMuPDF（`import fitz`）**：有些 Windows 11 開了
-> Smart App Control，PyMuPDF 的原生 DLL `_mupdf.pyd` 會被永久封鎖（`應用程式控制原則已封鎖此檔案`），
-> 而 `pypdfium2` 不受影響。`pypdfium2` 的 `scale` 以 72 dpi 為 1.0，所以 `scale = dpi / 72`。
+> 抽文字與轉圖一律用 `pypdfium2`，**不要另外裝 PyMuPDF（`import fitz`）**：它已移出核心，
+> 有些 Windows 11 開了 Smart App Control，PyMuPDF 的原生 DLL `_mupdf.pyd` 會被永久封鎖
+> （`應用程式控制原則已封鎖此檔案`），而 `pypdfium2` 不受影響。`pypdfium2` 的 `scale` 以 72 dpi 為 1.0，所以 `scale = dpi / 72`。
 
 ---
 
@@ -124,6 +124,7 @@ ocrmypdf.ocr(
     progress_bar=False,
     deskew=True,                     # 掃歪的紙本先校正
     rotate_pages=True,               # 紙本放反、掃成上下顛倒時自動轉正，不加的話整頁辨識不到
+    rotate_pages_threshold=5.0,      # 預設 14 太嚴：純中文頁的方向信心常只有 5～13，會判斷對卻不轉
 )
 
 document = pdfium.PdfDocument(target)
@@ -141,7 +142,8 @@ print(text[:200])
 - `output_type="pdfa"` 需要 Ghostscript，核心環境沒裝，會直接失敗
 - 找不到 `chi_tra`：模型不能放在 `Program Files`，要在 `%LOCALAPPDATA%\Tesseract-OCR\tessdata`
 - 辨識率差通常是掃描 dpi 太低（< 200）或紙張太歪，這是來源問題，要如實告訴使用者
-- 字很少、印章很大的頁面（簽章頁、核章頁）用預設設定常常一個字都抽不到，而且 `rotate_pages` 也判斷不出方向。這種頁面先用 pypdf 的 `page.rotate(180)` 手動轉正，再加 `tesseract_pagesegmode=11` 重跑
+- 字很少、印章很大的頁面（簽章頁、核章頁）用預設設定常常一個字都抽不到：方向信心只有 3 左右，低於門檻 5 就不會轉正，就算轉正了預設的版面分析也找不到字。這種頁面先用 pypdf 的 `page.rotate(180)` 手動轉正，再加 `tesseract_pagesegmode=11` 重跑
+- 不要為了這種頁面把 `rotate_pages_threshold` 再往下調：信心越低越容易轉錯方向，整批文件都會受影響
 - 框線裡的大字標題（例如封面的「學生名冊」）可能整個漏抓，調整設定也救不回來；要靠這個標題搜尋的話，先跟使用者說明
 
 ---

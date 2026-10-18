@@ -19,7 +19,7 @@
 
 > 「讀這份檔案，只安裝裡面的核心工具，選用工具先不要裝。」
 
-Agent 會以 Python 3.12 建立共用環境（與技能同一份，不建在這個 repo 裡）、安裝 13 項核心工具並驗證。核心流程會自動安裝 Tesseract OCR、英文／方向／繁中模型，並驗證 `docx2pdf`；電腦必須已安裝有授權的 Microsoft Word。影音與進階 Office 自動化工具不會自動安裝。
+Agent 會以 Python 3.12 建立共用環境（與技能同一份，不建在這個 repo 裡）、安裝 12 項核心工具並驗證。核心流程會自動安裝 Tesseract OCR、英文／方向／繁中模型，並驗證 `docx2pdf`；電腦必須已安裝有授權的 Microsoft Word。影音與進階 Office 自動化工具不會自動安裝。
 
 共用環境的位置兩個平台不同：
 
@@ -32,7 +32,7 @@ Agent 會以 Python 3.12 建立共用環境（與技能同一份，不建在這�
 
 ```powershell
 # Windows
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "./install_windows.ps1"
+pwsh -NoProfile -ExecutionPolicy Bypass -File "./install_windows.ps1"
 ```
 
 ```powershell
@@ -41,7 +41,8 @@ pwsh -File skill/scripts/ensure_env.ps1
 pwsh -File skill/scripts/ensure_ocr.ps1
 ```
 
-> - Windows 需要 PowerShell 7（`pwsh`）；macOS 用 `brew install --cask powershell` 安裝。
+> - 兩個平台都要用 PowerShell 7（`pwsh`），不要用 Windows 內建的 `powershell.exe`（5.1 會把腳本裡的中文讀成亂碼）。Windows 用 `winget install Microsoft.PowerShell`、macOS 用 `brew install --cask powershell` 安裝。
+> - `install_windows.ps1` 只是把 `skill/scripts/` 那兩支串起來再加上驗證，所以兩個平台裝出來的環境是同一套清單。
 > - Word 轉 PDF 兩個平台都可用：`docx2pdf` 在 Windows 走 COM、在 macOS 走 AppleScript，**兩邊都要求裝桌面版 Word**。
 > - Claude Code、Codex App、Antigravity、OpenCode 在 Windows 原生模式與 macOS 都可使用。若 OpenCode 跑在 WSL，需在 WSL 另建 Linux Python 環境，不能共用 Windows 的 venv。
 

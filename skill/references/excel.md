@@ -1,6 +1,6 @@
 # Excel 處理 recipe
 
-套件：`openpyxl`（讀寫與格式）、`matplotlib`（統計圖）。一般成績工作不需要 `pandas`。
+套件：`openpyxl`（讀寫與格式）、`matplotlib`（統計圖）。`pandas` 已隨核心安裝，但一般成績工作用 `openpyxl` 就夠，recipe 也都是 openpyxl 寫法。
 
 ---
 
@@ -36,9 +36,13 @@ from openpyxl.styles import Font, PatternFill
 SUBJECTS = ["國文", "英文", "數學"]        # 依實際欄位調整
 PASS_LINE = 60
 
-workbook = load_workbook("grades.xlsx", data_only=True)
+# 開兩份：values 只用來讀「公式算出來的值」，workbook 才是要寫回存檔的那份。
+# 直接存 data_only=True 開的檔，原本的公式會全部被換成數值（Excel 沒重算過的格子還會變空白）。
+SOURCE = "grades.xlsx"
+values = load_workbook(SOURCE, data_only=True).active
+workbook = load_workbook(SOURCE)
 sheet = workbook.active
-header = [str(c.value).strip() if c.value is not None else "" for c in sheet[1]]
+header = [str(c.value).strip() if c.value is not None else "" for c in values[1]]
 column_of = {name: index + 1 for index, name in enumerate(header)}
 
 red_fill = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
@@ -53,10 +57,11 @@ totals = []
 for row_index in range(2, sheet.max_row + 1):
     scores = []
     for subject in SUBJECTS:
-        cell = sheet.cell(row=row_index, column=column_of[subject])
-        value = cell.value if isinstance(cell.value, (int, float)) else None
+        raw = values.cell(row=row_index, column=column_of[subject]).value
+        value = raw if isinstance(raw, (int, float)) else None
         scores.append(value)
-        if value is not None and value < PASS_LINE:      # 不及格標紅
+        if value is not None and value < PASS_LINE:      # 不及格標紅（標在要存檔的那份）
+            cell = sheet.cell(row=row_index, column=column_of[subject])
             cell.fill, cell.font = red_fill, red_font
     total = sum(v for v in scores if v is not None)
     sheet.cell(row=row_index, column=total_column, value=total)
@@ -72,16 +77,19 @@ average_row = sheet.max_row + 1
 sheet.cell(row=average_row, column=1, value="全班平均")
 for subject in SUBJECTS:
     column = column_of[subject]
-    values = [sheet.cell(row=r, column=column).value for r in range(2, average_row)]
-    values = [v for v in values if isinstance(v, (int, float))]
-    if values:
-        sheet.cell(row=average_row, column=column, value=round(sum(values) / len(values), 2))
+    column_values = [values.cell(row=r, column=column).value for r in range(2, average_row)]
+    column_values = [v for v in column_values if isinstance(v, (int, float))]
+    if column_values:
+        sheet.cell(row=average_row, column=column, value=round(sum(column_values) / len(column_values), 2))
 
 Path("output").mkdir(exist_ok=True)
 workbook.save("output/grades_已計算.xlsx")     # 存新檔，不要覆蓋原始成績
 ```
 
 缺考／請假等非數字一律當作「不列入計算」，並在回報時說明有幾筆。
+
+**驗收**：用 `load_workbook("output/grades_已計算.xlsx")`（不加 `data_only`）讀回原本有公式的格子，
+值應該仍是 `=` 開頭的公式字串，而不是數字。
 
 ---
 
@@ -130,6 +138,7 @@ print({key: len(value) for key, value in groups.items()})   # 驗收：各檔人
 import random
 from openpyxl import load_workbook, Workbook
 from openpyxl.styles import Alignment
+from openpyxl.utils import get_column_letter
 
 ROWS, COLUMNS, SEED = 5, 6, 20260801        # 固定 seed 才能重現同一張表
 
@@ -149,7 +158,7 @@ for row in new_sheet.iter_rows():
     for cell in row:
         cell.alignment = Alignment(horizontal="center", vertical="center")
 for column in range(1, COLUMNS + 1):
-    new_sheet.column_dimensions[chr(64 + column)].width = 14
+    new_sheet.column_dimensions[get_column_letter(column)].width = 14   # 超過 26 欄也對（AA、AB…）
 
 workbook.save("output/座位表.xlsx")
 ```

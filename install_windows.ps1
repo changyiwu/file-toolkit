@@ -1,140 +1,58 @@
 [CmdletBinding()]
 param()
 
+# Windows entry point for the core toolkit. It does not reimplement any setup logic: it chains the
+# skill's two cross-platform scripts (ensure_env.ps1, ensure_ocr.ps1), adds the Microsoft Word check
+# that docx2pdf needs, and runs verify_core.py. Fix setup bugs in those scripts, not here.
+# Requires PowerShell 7 (pwsh), same as the scripts it calls.
+
+# Before Set-StrictMode: under strict mode 5.1 fails on the undefined $IsWindows with an unreadable
+# "variable has not been set" error instead of this message.
+if ($PSVersionTable.PSVersion.Major -lt 7) {
+    throw 'PowerShell 7 (pwsh) is required; 5.1 cannot parse the skill scripts. Install it with: winget install Microsoft.PowerShell, then run: pwsh -NoProfile -ExecutionPolicy Bypass -File ./install_windows.ps1'
+}
+
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 $OutputEncoding = [Console]::OutputEncoding
 $env:PYTHONUTF8 = '1'
 
+if (-not $IsWindows) {
+    throw 'install_windows.ps1 is Windows only. On macOS run skill/scripts/ensure_env.ps1 and skill/scripts/ensure_ocr.ps1, then verify_core.py.'
+}
+
 $RepoRoot = Split-Path -Parent $PSCommandPath
-# Shared with skill/scripts/ensure_env.ps1 so both install into the same environment.
-# Never place the venv inside the repo: this repo lives in a cloud-synced folder, and a
-# venv hardcodes the absolute path of its base Python, so it breaks on another machine.
-$VenvPath = Join-Path $env:LOCALAPPDATA 'file-toolkit\.venv'
-$RequirementsPath = Join-Path $RepoRoot 'requirements-core.txt'
+$ScriptsDir = Join-Path $RepoRoot 'skill' 'scripts'
+$EnsureEnvPath = Join-Path $ScriptsDir 'ensure_env.ps1'
+$EnsureOcrPath = Join-Path $ScriptsDir 'ensure_ocr.ps1'
+$RequirementsPath = Join-Path $ScriptsDir 'requirements-core.txt'
+$RootRequirementsPath = Join-Path $RepoRoot 'requirements-core.txt'
 $VerifyPath = Join-Path $RepoRoot 'verify_core.py'
-$PythonPath = Join-Path $VenvPath 'Scripts\python.exe'
 
-function Test-PythonRuns {
-    param([string]$PythonPath)
-
-    if (-not $PythonPath -or -not (Test-Path -LiteralPath $PythonPath)) {
-        return $false
-    }
-
-    try {
-        & $PythonPath -c 'pass' 2>$null | Out-Null
-        return ($LASTEXITCODE -eq 0)
-    }
-    catch {
-        # Smart App Control blocks the launcher outright, so PowerShell throws instead of
-        # returning an exit code. Treat that the same as "this interpreter cannot run".
-        return $false
+foreach ($path in @($EnsureEnvPath, $EnsureOcrPath, $RequirementsPath, $RootRequirementsPath, $VerifyPath)) {
+    if (-not (Test-Path -LiteralPath $path)) {
+        throw "Missing file: $path"
     }
 }
 
-function Get-VenvBasePython {
-    param([string]$VenvPath)
-
-    # 'home' is the base Python folder; 'executable' is the interpreter itself. uv writes only
-    # 'home', and the 'executable' path it would write can point at a version-pinned folder name
-    # that no longer exists, so try 'home' first and require both existence and a working run.
-    $ConfigPath = Join-Path $VenvPath 'pyvenv.cfg'
-    if (-not (Test-Path -LiteralPath $ConfigPath)) {
-        return $null
-    }
-
-    $HomeCandidates = @()
-    $ExecutableCandidates = @()
-    foreach ($line in (Get-Content -LiteralPath $ConfigPath)) {
-        if ($line -match '^\s*home\s*=\s*(.+?)\s*$') {
-            $HomeCandidates += (Join-Path $Matches[1] 'python.exe')
-        }
-        elseif ($line -match '^\s*executable\s*=\s*(.+?)\s*$') {
-            $ExecutableCandidates += $Matches[1]
-        }
-    }
-
-    foreach ($candidate in ($HomeCandidates + $ExecutableCandidates)) {
-        if (Test-PythonRuns -PythonPath $candidate) {
-            return $candidate
-        }
-    }
-
-    return $null
-}
-
-function Repair-VenvLauncher {
-    param([string]$VenvPath, [string]$PythonPath)
-
-    # Smart App Control blocks executables that have no established reputation, and the small
-    # launcher uv writes into Scripts\ is one of them: the packages are fine, only the entry
-    # point is unusable. Rebuilding with the base Python's own venv module drops a signed
-    # python.exe in its place and leaves Lib\site-packages untouched, so nothing is reinstalled.
-    $BasePython = Get-VenvBasePython -VenvPath $VenvPath
-    if (-not $BasePython) {
-        throw "The interpreter at $PythonPath cannot run, most likely blocked by Smart App Control, and no working base Python was found in $VenvPath\pyvenv.cfg. Delete $VenvPath and run this script again."
-    }
-
-    Write-Host 'The environment launcher cannot run (Smart App Control). Rebuilding it with the base Python...'
-    & $BasePython -m venv $VenvPath
-    if ($LASTEXITCODE -ne 0 -or -not (Test-PythonRuns -PythonPath $PythonPath)) {
-        throw "Failed to rebuild the launcher at $PythonPath. Delete $VenvPath and run this script again."
-    }
-    Write-Host 'Launcher rebuilt; the installed packages were kept.'
+# The root copy is what readers of the repo see; the skill installs from its own copy so it still
+# works once copied out of the repo. A silent drift between the two would install the wrong list.
+if ((Get-FileHash -LiteralPath $RootRequirementsPath).Hash -ne (Get-FileHash -LiteralPath $RequirementsPath).Hash) {
+    throw "requirements-core.txt differs from skill/scripts/requirements-core.txt. Make the two files identical and run this script again."
 }
 
 function Find-Uv {
     $command = Get-Command 'uv' -ErrorAction SilentlyContinue
-    if ($command) {
-        return $command.Source
-    }
+    if ($command) { return $command.Source }
 
     $candidates = @(
-        (Join-Path $env:USERPROFILE '.local\bin\uv.exe'),
-        (Join-Path $env:LOCALAPPDATA 'Microsoft\WinGet\Links\uv.exe')
-    )
-
-    foreach ($candidate in $candidates) {
-        if (Test-Path -LiteralPath $candidate) {
-            return $candidate
-        }
-    }
-
-    return $null
-}
-
-function Find-WinGet {
-    $command = Get-Command 'winget' -ErrorAction SilentlyContinue
-    if ($command) {
-        return $command.Source
-    }
-
-    $candidate = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\winget.exe'
-    if (Test-Path -LiteralPath $candidate) {
-        return $candidate
-    }
-
-    return $null
-}
-
-function Find-Tesseract {
-    $command = Get-Command 'tesseract' -ErrorAction SilentlyContinue
-    if ($command) {
-        return $command.Source
-    }
-
-    $candidates = @(
-        (Join-Path ([Environment]::GetFolderPath('ProgramFiles')) 'Tesseract-OCR\tesseract.exe'),
-        (Join-Path ([Environment]::GetFolderPath('ProgramFilesX86')) 'Tesseract-OCR\tesseract.exe')
+        (Join-Path $env:USERPROFILE '.local' 'bin' 'uv.exe'),
+        (Join-Path $env:LOCALAPPDATA 'Microsoft' 'WinGet' 'Links' 'uv.exe')
     )
     foreach ($candidate in $candidates) {
-        if ($candidate -and (Test-Path -LiteralPath $candidate)) {
-            return $candidate
-        }
+        if (Test-Path -LiteralPath $candidate) { return $candidate }
     }
-
     return $null
 }
 
@@ -165,146 +83,41 @@ function Find-Word {
     return $null
 }
 
-if (-not (Test-Path -LiteralPath $RequirementsPath)) {
-    throw "Missing requirements file: $RequirementsPath"
+Write-Host '[1/5] Preparing the shared Python environment (skill/scripts/ensure_env.ps1)...'
+# ensure_env.ps1 prints progress with Write-Host and the interpreter path as its last output line.
+$EnvOutput = @(& $EnsureEnvPath)
+$PythonPath = if ($EnvOutput.Count -gt 0) { [string]$EnvOutput[-1] } else { $null }
+if (-not $PythonPath -or -not (Test-Path -LiteralPath $PythonPath)) {
+    throw 'ensure_env.ps1 did not report a usable Python interpreter. Keep the error above.'
 }
+Write-Host "Python: $PythonPath"
 
-Write-Host '[1/6] Checking uv...'
+Write-Host '[2/5] Syncing the 12 core packages with the pinned list...'
+# ensure_env.ps1 reuses any environment whose imports pass, even with older pins. This installer is
+# also the "repair" entry point, so bring the versions back in line with the list.
 $UvPath = Find-Uv
-if (-not $UvPath) {
-    $WinGetPath = Find-WinGet
-    if (-not $WinGetPath) {
-        throw 'uv and WinGet were not found. Install uv from https://docs.astral.sh/uv/ and run this script again.'
-    }
-
-    Write-Host 'Installing official astral-sh.uv with WinGet...'
-    & $WinGetPath install --exact --id astral-sh.uv --silent --accept-package-agreements --accept-source-agreements
+if ($UvPath) {
+    & $UvPath pip install --python $PythonPath --requirements $RequirementsPath --quiet --no-progress
     if ($LASTEXITCODE -ne 0) {
-        throw "uv installation failed. WinGet exit code: $LASTEXITCODE"
+        throw 'Core package installation failed. Keep the original error above; do not install every optional package as a workaround.'
     }
-
-    $UvPath = Find-Uv
-    if (-not $UvPath) {
-        throw 'uv was installed, but this terminal cannot see the new PATH. Restart the Agent and run this script again.'
-    }
-}
-
-Write-Host "uv: $UvPath"
-Write-Host "[2/6] Preparing the shared Python environment at $VenvPath ..."
-if (Test-Path -LiteralPath $PythonPath) {
-    # Repair before the version check: a launcher blocked by Smart App Control would otherwise
-    # abort the script with an unreadable OS error on an environment that is perfectly healthy.
-    if (-not (Test-PythonRuns -PythonPath $PythonPath)) {
-        Repair-VenvLauncher -VenvPath $VenvPath -PythonPath $PythonPath
-    }
-
-    # Reuse anything 3.12 or newer. This environment is shared with the skill, so an exact
-    # 3.12 requirement would reject a working newer one and tell the user to delete it.
-    $ExistingVersion = & $PythonPath -c "import platform; print(platform.python_version())"
-    $ParsedVersion = $null
-    if ($LASTEXITCODE -ne 0 -or -not [version]::TryParse($ExistingVersion, [ref]$ParsedVersion) -or $ParsedVersion -lt [version]'3.12') {
-        throw "The shared environment at $VenvPath uses Python $ExistingVersion, which is older than 3.12. It was not removed. Delete that folder and run this script again; the skill will rebuild it on next use."
-    }
-    Write-Host "Reusing the existing shared environment (Python $ExistingVersion)."
 }
 else {
-    # Windows on ARM: x64 Python under Prism emulation; several core dependencies have no
-    # win_arm64 wheels (same rule as skill/scripts/ensure_env.ps1). Check the OS, not the process.
-    $IsWindowsArm = [Runtime.InteropServices.RuntimeInformation]::OSArchitecture -eq [Runtime.InteropServices.Architecture]::Arm64
-    $PythonRequest = if ($IsWindowsArm) { 'cpython-3.12-windows-x86_64-none' } else { '3.12' }
-    & $UvPath venv --python $PythonRequest $VenvPath --quiet
-    if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $PythonPath)) {
-        throw "Failed to create the shared environment at $VenvPath."
-    }
-    if (-not (Test-PythonRuns -PythonPath $PythonPath)) {
-        Repair-VenvLauncher -VenvPath $VenvPath -PythonPath $PythonPath
-    }
+    Write-Host 'uv was not found, so the pinned versions were not re-synced. The existing environment passed the import check and is used as is.'
 }
 
-Write-Host '[3/6] Installing 13 core packages (media tools and advanced Office automation are excluded)...'
-& $UvPath pip install --python $PythonPath --requirements $RequirementsPath --quiet --quiet --no-progress
-if ($LASTEXITCODE -ne 0) {
-    throw 'Core package installation failed. Keep the original error above; do not install every optional package as a workaround.'
-}
-
-Write-Host '[4/6] Checking Microsoft Word and Tesseract OCR...'
+Write-Host '[3/5] Checking Microsoft Word...'
 $WordPath = Find-Word
 if (-not $WordPath) {
     throw 'Microsoft Word was not found. It is required by the core docx2pdf workflow and cannot be installed automatically because it requires an Office license.'
 }
 Write-Host "Microsoft Word: $WordPath"
 
-$TesseractPath = Find-Tesseract
-if (-not $TesseractPath) {
-    $WinGetPath = Find-WinGet
-    if (-not $WinGetPath) {
-        throw 'Tesseract OCR and WinGet were not found. Install UB-Mannheim.TesseractOCR and run this script again.'
-    }
+Write-Host '[4/5] Preparing Tesseract OCR and the Traditional Chinese model (skill/scripts/ensure_ocr.ps1)...'
+# ensure_ocr.ps1 sets TESSDATA_PREFIX for this process too, so verify_core.py below can see it.
+& $EnsureOcrPath
 
-    Write-Host 'Installing Tesseract OCR with WinGet...'
-    & $WinGetPath install --exact --id UB-Mannheim.TesseractOCR --silent --accept-package-agreements --accept-source-agreements
-    if ($LASTEXITCODE -ne 0) {
-        throw "Tesseract OCR installation failed. WinGet exit code: $LASTEXITCODE"
-    }
-    $TesseractPath = Find-Tesseract
-    if (-not $TesseractPath) {
-        throw 'Tesseract OCR was installed, but its executable was not found. Restart the Agent and run this script again.'
-    }
-}
-Write-Host "Tesseract OCR: $TesseractPath"
-
-Write-Host '[5/6] Configuring English, orientation, and Traditional Chinese OCR data...'
-$SourceTessDataPath = Join-Path (Split-Path -Parent $TesseractPath) 'tessdata'
-$TessDataPath = Join-Path $env:LOCALAPPDATA 'Tesseract-OCR\tessdata'
-New-Item -ItemType Directory -Path $TessDataPath -Force | Out-Null
-
-foreach ($fileName in @('eng.traineddata', 'osd.traineddata', 'pdf.ttf')) {
-    $sourceFile = Join-Path $SourceTessDataPath $fileName
-    if (-not (Test-Path -LiteralPath $sourceFile)) {
-        throw "Missing Tesseract data file: $sourceFile"
-    }
-    Copy-Item -LiteralPath $sourceFile -Destination $TessDataPath -Force
-}
-
-foreach ($folderName in @('configs', 'tessconfigs')) {
-    $sourceFolder = Join-Path $SourceTessDataPath $folderName
-    $targetFolder = Join-Path $TessDataPath $folderName
-    if (-not (Test-Path -LiteralPath $sourceFolder)) {
-        throw "Missing Tesseract configuration folder: $sourceFolder"
-    }
-    New-Item -ItemType Directory -Path $targetFolder -Force | Out-Null
-    Get-ChildItem -LiteralPath $sourceFolder -File | Copy-Item -Destination $targetFolder -Force
-}
-
-$ChiTraPath = Join-Path $TessDataPath 'chi_tra.traineddata'
-$ChiTraHash = '529C5B5797D64B126065CD55F2BB4C7FD7B15790798091B1FF259941A829330B'
-$ChiTraUrl = 'https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/87416418657359cb625c412a48b6e1d6d41c29bd/chi_tra.traineddata'
-$DownloadChiTra = -not (Test-Path -LiteralPath $ChiTraPath)
-if (-not $DownloadChiTra) {
-    $DownloadChiTra = (Get-FileHash -Algorithm SHA256 -LiteralPath $ChiTraPath).Hash -ne $ChiTraHash
-}
-if ($DownloadChiTra) {
-    $TemporaryChiTraPath = "$ChiTraPath.download"
-    try {
-        Invoke-WebRequest -Uri $ChiTraUrl -OutFile $TemporaryChiTraPath
-        $DownloadedHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $TemporaryChiTraPath).Hash
-        if ($DownloadedHash -ne $ChiTraHash) {
-            throw "Traditional Chinese OCR data hash mismatch: $DownloadedHash"
-        }
-        Move-Item -LiteralPath $TemporaryChiTraPath -Destination $ChiTraPath -Force
-    }
-    finally {
-        if (Test-Path -LiteralPath $TemporaryChiTraPath) {
-            Remove-Item -LiteralPath $TemporaryChiTraPath -Force
-        }
-    }
-}
-
-$env:TESSDATA_PREFIX = $TessDataPath
-[Environment]::SetEnvironmentVariable('TESSDATA_PREFIX', $TessDataPath, 'User')
-Write-Host "Tesseract data: $TessDataPath"
-
-Write-Host '[6/6] Verifying core packages and file workflows...'
+Write-Host '[5/5] Verifying core packages and file workflows...'
 & $PythonPath $VerifyPath
 if ($LASTEXITCODE -ne 0) {
     throw 'Core package verification failed.'
