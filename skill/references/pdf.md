@@ -123,6 +123,7 @@ ocrmypdf.ocr(
     skip_text=True,                  # 已經有文字層的頁面跳過，避免重複疊字
     progress_bar=False,
     deskew=True,                     # 掃歪的紙本先校正
+    rotate_pages=True,               # 紙本放反、掃成上下顛倒時自動轉正，不加的話整頁辨識不到
 )
 
 document = pdfium.PdfDocument(target)
@@ -140,6 +141,8 @@ print(text[:200])
 - `output_type="pdfa"` 需要 Ghostscript，核心環境沒裝，會直接失敗
 - 找不到 `chi_tra`：模型不能放在 `Program Files`，要在 `%LOCALAPPDATA%\Tesseract-OCR\tessdata`
 - 辨識率差通常是掃描 dpi 太低（< 200）或紙張太歪，這是來源問題，要如實告訴使用者
+- 字很少、印章很大的頁面（簽章頁、核章頁）用預設設定常常一個字都抽不到，而且 `rotate_pages` 也判斷不出方向。這種頁面先用 pypdf 的 `page.rotate(180)` 手動轉正，再加 `tesseract_pagesegmode=11` 重跑
+- 框線裡的大字標題（例如封面的「學生名冊」）可能整個漏抓，調整設定也救不回來；要靠這個標題搜尋的話，先跟使用者說明
 
 ---
 
