@@ -1,4 +1,4 @@
-# file-toolkit（專案藍圖）
+# teach-file-toolkit（專案藍圖）
 
 > 本檔為跨 Agent 通用的專案藍圖（AGENTS.md 開放標準）。任何 Agent 的每個 session 都應先讀本檔＋`handoff.md`。
 
@@ -27,7 +27,7 @@
 ## 資料夾結構
 
 ```
-file-toolkit/
+teach-file-toolkit/
 ├─ README.md                              # 專案用途與初學者使用方式
 ├─ AGENT_SETUP_教學檔案處理工具包.md        # 交給 AI Agent 的安裝與安全指引
 ├─ install_windows.ps1                    # Windows 入口：串接 skill/scripts 兩支腳本＋Word 檢查＋驗證
@@ -50,8 +50,8 @@ file-toolkit/
 | 層級 | 平台 | 位置 | 讀取時機 |
 |------|------|------|---------|
 | L1 | 本地（GDrive） | `AGENTS.md`＋`handoff.md` | 每個 session |
-| L2 | GitHub | https://github.com/changyiwu/file-toolkit （公開，預設分支 `main`） | 指定時 |
-| L3 | Obsidian | `file-toolkit/專案工作流程.md` | 有需要時 |
+| L2 | GitHub | https://github.com/changyiwu/teach-file-toolkit （公開，預設分支 `main`） | 指定時 |
+| L3 | Obsidian | `teach-file-toolkit/專案工作流程.md` | 有需要時 |
 
 ## 三個檔案的職責（依「時效性」分家，不是依「詳細程度」）
 
@@ -81,7 +81,7 @@ file-toolkit/
 - 根目錄與 `skill/scripts/` 各有一份 `requirements-core.txt`（技能拷出 repo 也要能用），兩份必須逐位元組相同，`install_windows.ps1` 會檢查
 - Python 環境一律建在 repo 外的共用位置（Windows `%LOCALAPPDATA%\file-toolkit\.venv`、macOS `~/.local/share/file-toolkit/.venv`），`install_windows.ps1` 透過 `skill/scripts/ensure_env.ps1` 用同一份；**不要在 repo 內建 `.venv`**（repo 在雲端同步資料夾，而 venv 會寫死 base Python 的絕對路徑，換電腦就壞）
 - **Windows on ARM（RTX Spark、Snapdragon）的共用環境一律建成 x64 Python**（`cpython-3.12-windows-x86_64-none`，靠 Prism 模擬）。原生 ARM64 裝不起核心套件：`cryptography`（`pdfminer.six` 拉進來的）、`pi-heif`、`uharfbuzz` 都沒有 win_arm64 wheel。這段邏輯只在 `ensure_env.ps1`，`install_windows.ps1` 呼叫它
-- **`install_windows.ps1` 是 Windows 專屬**（winget、Program Files 偵測），已列入 `.platform-ok`。macOS 的環境建置走 `skill/scripts/ensure_env.ps1` ＋ `ensure_ocr.ps1`，那兩支是跨平台的；跨平台約定見 `cross-device-agent-skills/platform.md`
+- **`install_windows.ps1` 是 Windows 專屬**（winget、Program Files 偵測），已列入 `.platform-ok`。macOS 的環境建置走 `skill/scripts/ensure_env.ps1` ＋ `ensure_ocr.ps1`，那兩支是跨平台的；跨平台約定見 `agent-project-flow/platform.md`
 - **PowerShell 一律 pwsh 7**，三支腳本開頭都有 `$IsWindows` 的 guard；`.ps1` 一律 UTF-8 無 BOM。所有文件裡的執行指令都寫 `pwsh -NoProfile -ExecutionPolicy Bypass -File ...`，**不要寫 `powershell.exe`**
 - 共用環境是既有環境就重用（3.12 以上即可），不要因為版本不是 3.12 就叫使用者刪掉——那是技能正在用的同一份
 
