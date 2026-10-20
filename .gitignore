@@ -40,3 +40,6 @@ page_dict_dump.txt
 
 # 交接檔含真實電腦名與本機路徑，只走雲端硬碟同步，不進公開 repo
 handoff.md
+
+# 產出一律放 output/，不進 git
+output/

@@ -84,6 +84,7 @@ teach-file-toolkit/
 - **`install_windows.ps1` 是 Windows 專屬**（winget、Program Files 偵測），已列入 `.platform-ok`。macOS 的環境建置走 `skill/scripts/ensure_env.ps1` ＋ `ensure_ocr.ps1`，那兩支是跨平台的；跨平台約定見 `agent-project-flow/platform.md`
 - **PowerShell 一律 pwsh 7**，三支腳本開頭都有 `$IsWindows` 的 guard；`.ps1` 一律 UTF-8 無 BOM。所有文件裡的執行指令都寫 `pwsh -NoProfile -ExecutionPolicy Bypass -File ...`，**不要寫 `powershell.exe`**
 - 共用環境是既有環境就重用（3.12 以上即可），不要因為版本不是 3.12 就叫使用者刪掉——那是技能正在用的同一份
+- **產出一律放 `output/`**：本專案產生的檔案或資料夾（成品、匯出、報表、生成圖、渲染等）預設放專案根目錄的 `output/`，不另開 `outputs/`、`exports/`、`generated/`、`out/` 之類的資料夾，方便找；`output/` 不進 git。部署工具指定的建置目錄（`dist/`、`build/`）不在此限
 
 ## 安全邊界
 
