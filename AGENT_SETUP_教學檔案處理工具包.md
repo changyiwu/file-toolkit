@@ -93,7 +93,6 @@ pwsh -File skill/scripts/ensure_ocr.ps1      # brew 安裝 tesseract / tesseract
 | `PyMuPDF` | 抽文字與轉圖已由 `pypdfium2` 負責；部分 Windows 11 的 Smart App Control 會封鎖它的原生 DLL。 |
 | `pdf2image` | 需另裝 Poppler；PDF 轉圖可先用 `pypdfium2`。 |
 | `pywin32` | `docx2pdf` 會自動帶入；只有直接撰寫 Office COM 自動化時才需另外操作。 |
-| `edge-tts` | 只有文字轉語音時需要，且會連線到雲端服務。 |
 | `yt-dlp` | 只有下載影音時需要，合併影音通常還要 ffmpeg。 |
 | `youtube-transcript-api` | 只有抓 YouTube 已存在字幕時需要；無字幕影片無法處理。 |
 

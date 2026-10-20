@@ -110,7 +110,7 @@ recipe 裡的寫法都是實測過的版本，**遇到同名任務直接沿用�
 | `pdfplumber` | `markitdown[pdf]` | 精準擷取 PDF 表格 |
 | `xlsxwriter` | `python-pptx` | 只寫不讀的大型 Excel 輸出 |
 
-其他套件（`docxcompose`、`edge-tts`、`yt-dlp`、`youtube-transcript-api`）**預設不裝**。真的需要時先跟使用者說明用途，同意後單獨安裝一項：
+其他套件（`docxcompose`、`yt-dlp`、`youtube-transcript-api`）**預設不裝**。真的需要時先跟使用者說明用途，同意後單獨安裝一項：
 
 ```powershell
 uv pip install --python "<Python 路徑>" docxcompose

@@ -109,7 +109,7 @@ print([f.name for f in font_manager.fontManager.ttflist if "JhengHei" in f.name 
 
 ## M5. 影音與字幕（選裝，預設不要裝）
 
-`edge-tts`（講稿轉語音）、`yt-dlp`（下載）、`youtube-transcript-api`（抓字幕）都不在核心 12 項。
+`yt-dlp`（下載）、`youtube-transcript-api`（抓字幕）都不在核心 12 項。
 使用者提出需求時先說明「這需要額外安裝一個套件」，同意後再單獨裝一項。
 
 下載他人影片與字幕涉及著作權，只在使用者自己的內容或明確授權的素材上進行。
